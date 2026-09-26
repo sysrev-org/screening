@@ -129,6 +129,8 @@ body.wide header .bar, body.wide main, body.wide .decide .bar { max-width: 1500p
 .ex-input textarea { resize: vertical; }
 .ex-field.diff { background: var(--maybe-bg); }
 .ex-field.changed { background: var(--changed-bg); }
+.ex-field.ai-warn { box-shadow: inset 3px 0 0 var(--maybe); }
+.warn { color: var(--maybe); font-weight: 600; }
 input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclude-bg); }
 .btn.icon { padding: 6px 8px; line-height: 1; }
 .ex-source, .ex-other { font-size: 13px; color: var(--muted); margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; }
@@ -757,10 +759,11 @@ function renderMarkdown(md) {
 
 // ---------------------------------------------------------------- full text panel
 
-async function loadMarkdown(id) {
+function loadMarkdown(id) {
   if (!S.mdCache.has(id)) {
-    const file = await readFile(`fulltext/md/${id}.md`);
-    S.mdCache.set(id, file ? file.text : null);
+    const request = readFile(`fulltext/md/${id}.md`).then((file) => (file ? file.text : null));
+    request.catch(() => S.mdCache.delete(id));  // retried next time
+    S.mdCache.set(id, request);
   }
   return S.mdCache.get(id);
 }
@@ -1085,7 +1088,7 @@ const EX = {
   state: null, form: { study: [], results: [] }, closed: false,
   mine: [], roles: new Map(), extractors: new Map(), verifiers: new Map(),
   docs: new Map(), others: new Map(), consensus: new Map(), shas: new Map(), dirty: new Set(),
-  current: null, editing: "mine", tab: "mine", selection: "", formBox: null,
+  current: null, editing: "mine", tab: "mine", selection: "", formBox: null, plain: new Map(),
 };
 const YES_NO = { yes: "yes", si: "yes", "sì": "yes", true: "yes", no: "no", false: "no" };
 const NUMBER = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
@@ -1258,6 +1261,49 @@ function buildConsensus(id) {
     doc.results.push(row);
   }
   return doc;
+}
+
+// --- sources of the AI (same rules as src/sysrev/extraction_ai.py)
+
+const TYPOGRAPHY = { "‘": "'", "’": "'", "“": '"', "”": '"', "–": "-", "—": "-", "−": "-" };
+
+function normalizeQuote(text) {
+  let value = decodeEntities(String(text ?? ""));
+  value = value.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/<\/?(?:sup|sub)>/gi, "").replace(/<br\s*\/?>/gi, " ");
+  value = value.replace(/[*`\\|#>_~]/g, " ").replace(/[‘’“”–—−]/g, (c) => TYPOGRAPHY[c]);
+  return value.toLowerCase().split(/\s+/).filter(Boolean).join(" ");
+}
+
+function quoteFound(normalizedText, quote) {
+  const parts = String(quote ?? "").split(/\.\.\.|…/).map(normalizeQuote).filter(Boolean);
+  return parts.length > 0 && parts.every((part) => normalizedText.includes(part));
+}
+
+async function studyPlain(id) {
+  if (!EX.plain.has(id)) {
+    let md = await loadMarkdown(id);
+    if (md !== null) {
+      if (md.startsWith("---\n")) {
+        const end = md.indexOf("\n---", 4);
+        if (end !== -1) md = md.slice(md.indexOf("\n", end + 1) + 1);
+      }
+      md = normalizeQuote(md.replace(/<!--[\s\S]*?-->/g, " "));
+    }
+    EX.plain.set(id, md);
+  }
+  return EX.plain.get(id);
+}
+
+// The study is extracted by the AI: its sources are checked against the text.
+function aiExtractor(id) {
+  const ai = EX.state.ai_reviewer;
+  return ai && (EX.extractors.get(id) || []).includes(ai) ? ai : "";
+}
+
+function aiSummary(spec, cell, text) {
+  if (!hasValue(cell) || spec.key) return "";
+  if (!cell.source) return "nosource";
+  return text && !quoteFound(text, cell.source) ? "notfound" : "";
 }
 
 // --- files
@@ -1545,12 +1591,17 @@ function exOpen(id) {
   $("exListView").hidden = true;
   $("exStudy").hidden = false;
   const record = S.records.get(id) || { record_id: id, title: id };
-  EX.formBox = el("div", { class: "ex-form card" });
+  const box = el("div", { class: "ex-form card" }, el("p", { class: "muted", text: "Caricamento della scheda…" }));
+  EX.formBox = box;
+  $("exBar").hidden = true;
   $("exStudy").replaceChildren(el("div", { class: "ex-layout" },
     el("div", { class: "ex-text card record" }, ...recordBody(record).filter(Boolean), ...fullTextPanel(id)),
-    EX.formBox));
-  rerenderForm();
+    box));
   window.scrollTo(0, 0);
+  const checkAi = aiExtractor(id) && EX.roles.get(id) === "verifier" && S.mdFiles.has(id);
+  (checkAi ? studyPlain(id).catch(() => null) : Promise.resolve()).then(() => {
+    if (EX.formBox === box) rerenderForm();
+  });
 }
 
 function exMove(step) {
@@ -1580,7 +1631,9 @@ function exContext(id) {
       doc.results = clone(source.results);
       EX.docs.set(id, doc);
     }
-    return { mode: "verify", key: `mine:${id}`, doc: EX.docs.get(id), others: { [extractor]: source }, editable: !EX.closed };
+    const ai = aiExtractor(id) === extractor ? extractor : "";
+    return { mode: "verify", key: `mine:${id}`, doc: EX.docs.get(id), others: { [extractor]: source }, editable: !EX.closed,
+      ai, aiText: ai ? EX.plain.get(id) ?? null : null };
   }
   if (!EX.docs.has(id)) EX.docs.set(id, newDoc(id, "extractor"));
   return { mode: "extract", key: `mine:${id}`, doc: EX.docs.get(id), others: null, editable: !EX.closed };
@@ -1606,6 +1659,7 @@ function formContent(ctx) {
   if (ctx.mode === "verify") {
     out.push(el("h2", { text: `Verifica dei dati estratti da ${names[0]}` }),
       el("p", { class: "small muted", text: "Controlla ogni valore con il testo. Correggi dove serve: i campi corretti diventano azzurri. Poi clicca «Segna come verificata»." }));
+    if (ctx.ai) out.push(aiSummaryLine(ctx));
   } else if (ctx.mode === "consensus") {
     out.push(el("h2", { text: "Valori concordati" }),
       el("p", { class: "small muted", text: ctx.editable
@@ -1629,6 +1683,22 @@ function formContent(ctx) {
   note.addEventListener("input", () => { ctx.doc.note = note.value; exTouch(ctx.key); });
   out.push(el("h3", { text: "Note" }), note);
   return out;
+}
+
+function aiSummaryLine(ctx) {
+  const doc = ctx.others[ctx.ai];
+  const cells = [...studyFields().map((f) => [f, doc.study[f.id]]),
+    ...doc.results.flatMap((row) => resultFields().map((f) => [f, row[f.id]]))];
+  const values = cells.filter(([f, cell]) => hasValue(cell) && !f.key).length;
+  const kinds = cells.map(([f, cell]) => aiSummary(f, cell, ctx.aiText));
+  const nosource = kinds.filter((k) => k === "nosource").length;
+  const notfound = kinds.filter((k) => k === "notfound").length;
+  const parts = [`Valori estratti da ${ctx.ai}: ${values}`];
+  if (nosource) parts.push(`senza fonte: ${nosource}`);
+  if (notfound) parts.push(`fonte non trovata nel testo: ${notfound}`);
+  const text = parts.join(" · ") + (nosource || notfound ? " (segnati con ⚠: controllali con più attenzione)." : ".");
+  const note = ctx.aiText === null ? " Il testo in Markdown non c'è: le fonti non si possono controllare." : "";
+  return el("p", { class: `small ${nosource || notfound ? "warn" : "muted"}`, id: "aiSummary", text: text + note });
 }
 
 function resultsSection(ctx, names) {
@@ -1736,6 +1806,14 @@ function fieldBox(ctx, spec, cell, fid, others, onChange) {
     const mine = exNormalize(spec, cell.value);
     if (ctx.mode === "verify") {
       const other = cells[names[0]];
+      const problem = ctx.ai ? aiSummary(spec, other, ctx.aiText) : "";
+      box.classList.toggle("ai-warn", !!problem);
+      if (problem) {
+        compareLine.append(el("span", { class: "warn", text: problem === "nosource"
+          ? `⚠ ${ctx.ai} non ha indicato da dove viene il valore`
+          : `⚠ la frase citata da ${ctx.ai} non è nel testo` }));
+        compareLine.hidden = false;
+      }
       if (exNormalize(spec, other?.value) === mine) return;
       box.classList.add("changed");
       compareLine.append(`${names[0]}: `, el("strong", { text: exDisplay(spec, other?.value) || "(vuoto)" }), " · corretto");
