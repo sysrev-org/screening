@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Screening · sysrev</title>
+<style>
+:root {
+  --bg: #f5f6f8; --card: #ffffff; --text: #1c232b; --muted: #5d6977; --border: #dbe0e6;
+  --accent: #2c59d0; --accent-text: #ffffff;
+  --include: #17744a; --include-bg: #e2f4ea;
+  --maybe: #8a5d00; --maybe-bg: #fff2cf;
+  --exclude: #b1261d; --exclude-bg: #fbe3e0;
+  --hl-include: #bfeccf; --hl-exclude: #f8cbc6; --banner: #fff2cf; --error: #fbe3e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #13171c; --card: #1c232b; --text: #e6eaef; --muted: #9ba7b5; --border: #2d3641;
+    --accent: #7fa2ff; --accent-text: #0d1117;
+    --include: #6fd39c; --include-bg: #16352a;
+    --maybe: #f0c24d; --maybe-bg: #3a2f12;
+    --exclude: #ff8b81; --exclude-bg: #3d1c1a;
+    --hl-include: #1d5436; --hl-exclude: #6a2520; --banner: #3a2f12; --error: #3d1c1a;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--accent); }
+[hidden] { display: none !important; }
+
+header { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
+.bar { max-width: 900px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.brand { font-weight: 700; }
+.review-title { color: var(--muted); flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user { color: var(--muted); font-size: 14px; }
+.save { font-size: 14px; padding: 2px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); }
+.save.error { background: var(--error); color: var(--exclude); }
+.progress { height: 4px; background: var(--border); }
+.progress > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+
+main { max-width: 900px; margin: 0 auto; padding: 16px 16px 120px; }
+.banner { background: var(--banner); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
+.banner.error { background: var(--error); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+
+.btn { border: 1px solid var(--border); background: var(--card); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.tab { border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+
+.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.toolbar input[type=search] { flex: 1 1 180px; min-width: 0; }
+input[type=text], input[type=password], input[type=search], select, textarea {
+  background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+.position { color: var(--muted); font-size: 14px; }
+
+.record-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
+.badge { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
+.record h2 { font-size: 21px; line-height: 1.35; margin: 4px 0 8px; }
+.authors { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
+.source { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+.abstract p { margin: 0 0 10px; }
+.extra { font-size: 14px; color: var(--muted); margin-top: 12px; }
+.links { display: flex; gap: 14px; margin-top: 12px; font-size: 14px; flex-wrap: wrap; }
+mark.hl-include { background: var(--hl-include); color: inherit; border-radius: 3px; padding: 0 1px; }
+mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+.decide { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--border); z-index: 10; }
+.decide .bar { gap: 8px; }
+.decide .choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.choice { border: 2px solid var(--border); background: var(--card); border-radius: 10px; padding: 10px 18px; cursor: pointer; font-weight: 600; min-width: 110px; }
+.choice kbd { font-weight: 400; font-size: 12px; opacity: .7; margin-left: 4px; }
+.choice.include { color: var(--include); } .choice.include[aria-pressed="true"] { background: var(--include-bg); border-color: var(--include); }
+.choice.maybe { color: var(--maybe); } .choice.maybe[aria-pressed="true"] { background: var(--maybe-bg); border-color: var(--maybe); }
+.choice.exclude { color: var(--exclude); } .choice.exclude[aria-pressed="true"] { background: var(--exclude-bg); border-color: var(--exclude); }
+.choice:disabled { opacity: .45; cursor: default; }
+.decide .note { flex: 1 1 220px; min-width: 0; }
+.nav { display: flex; gap: 6px; }
+
+.decision-list { margin: 10px 0; padding: 0; list-style: none; }
+.decision-list li { padding: 6px 0; border-top: 1px solid var(--border); }
+.tag { font-weight: 600; }
+.tag.include { color: var(--include); } .tag.exclude { color: var(--exclude); } .tag.maybe { color: var(--maybe); }
+.consensus { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.consensus input { flex: 1 1 200px; min-width: 0; }
+
+.login { max-width: 520px; margin: 40px auto; }
+.login label { display: block; font-weight: 600; margin: 14px 0 4px; }
+.login input[type=text], .login input[type=password] { width: 100%; }
+.help { font-size: 14px; }
+.help kbd, .keys kbd { border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: 13px; background: var(--bg); }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <span class="brand">Screening</span>
+    <span class="review-title" id="reviewTitle"></span>
+    <span class="save" id="saveState" hidden></span>
+    <span class="user" id="user"></span>
+    <button class="btn small" id="logout" hidden>Esci</button>
+  </div>
+  <div class="progress"><div id="progressBar"></div></div>
+</header>
+
+<main>
+  <div id="banner" class="banner" hidden></div>
+
+  <section id="loginView" class="card login" hidden>
+    <h1 style="margin-top:0">Screening di titolo e abstract</h1>
+    <p class="muted">Per entrare servono il nome del repository della review e il tuo token GitHub.
+      <span id="guide">La guida per i revisori, nel repository della review, spiega come creare il token.</span></p>
+    <form id="loginForm">
+      <label for="repoInput">Repository della review</label>
+      <input type="text" id="repoInput" placeholder="sysrev-org/nome-della-review" autocomplete="off" spellcheck="false" required>
+      <label for="tokenInput">Token GitHub</label>
+      <input type="password" id="tokenInput" placeholder="github_pat_..." autocomplete="off" spellcheck="false" required>
+      <p><label style="display:inline;font-weight:400"><input type="checkbox" id="rememberInput" checked>
+        Ricorda su questo computer</label></p>
+      <button class="btn primary" type="submit">Entra</button>
+    </form>
+  </section>
+
+  <section id="loadingView" class="card" hidden><p id="loadingText">Caricamento…</p></section>
+
+  <nav class="tabs" id="tabs" hidden>
+    <button class="tab" id="tabScreen" aria-selected="true">Le mie decisioni</button>
+    <button class="tab" id="tabConflicts" aria-selected="false">Conflitti</button>
+  </nav>
+
+  <section id="screenView" hidden>
+    <div class="toolbar">
+      <select id="filter" aria-label="Quali record mostrare">
+        <option value="todo">Da fare</option>
+        <option value="done">Fatti</option>
+        <option value="all">Tutti</option>
+        <option value="include">Inclusi</option>
+        <option value="maybe">Forse</option>
+        <option value="exclude">Esclusi</option>
+      </select>
+      <input type="search" id="search" placeholder="Cerca nel titolo, abstract, autori" aria-label="Cerca">
+      <span class="position" id="position"></span>
+      <button class="btn small" id="helpButton" type="button">Tasti</button>
+    </div>
+    <div class="card help" id="help" hidden>
+      <span class="keys"><kbd>I</kbd> includi · <kbd>F</kbd> forse · <kbd>E</kbd> escludi ·
+      <kbd>←</kbd> <kbd>→</kbd> record precedente / successivo · <kbd>N</kbd> scrivi una nota</span>.
+      Le decisioni si salvano da sole su GitHub dopo pochi secondi; puoi cambiarle quando vuoi finché lo screening è aperto.
+    </div>
+    <article class="card record" id="record"></article>
+  </section>
+
+  <section id="conflictsView" hidden>
+    <div class="toolbar">
+      <select id="conflictFilter" aria-label="Quali conflitti mostrare">
+        <option value="open">Da risolvere</option>
+        <option value="resolved">Risolti</option>
+        <option value="all">Tutti</option>
+      </select>
+      <label class="small"><input type="checkbox" id="onlyMine"> Solo quelli in cui sono revisore</label>
+      <span class="position" id="conflictCount"></span>
+    </div>
+    <div id="conflictList"></div>
+  </section>
+</main>
+
+<div class="decide" id="decideBar" hidden>
+  <div class="bar">
+    <div class="choices">
+      <button class="choice include" data-decision="include" aria-pressed="false">Includi<kbd>I</kbd></button>
+      <button class="choice maybe" data-decision="maybe" aria-pressed="false">Forse<kbd>F</kbd></button>
+      <button class="choice exclude" data-decision="exclude" aria-pressed="false">Escludi<kbd>E</kbd></button>
+    </div>
+    <input type="text" class="note" id="note" placeholder="Nota (facoltativa)" aria-label="Nota">
+    <div class="nav">
+      <button class="btn" id="prev" aria-label="Record precedente">←</button>
+      <button class="btn" id="next" aria-label="Record successivo">→</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+const API = "https://api.github.com";
+const STAGE_DIR = "screening/title_abstract";
+const RECORDS_PATH = "records/records.csv";
+const DECISION_FIELDS = ["record_id", "decision", "note", "updated_at"];
+const CONSENSUS_FIELDS = ["record_id", "decision", "note", "decided_by", "updated_at"];
+const LABELS = { include: "Incluso", maybe: "Forse", exclude: "Escluso" };
+const DECISION_WORDS = {
+  include: "include", includi: "include", incluso: "include", si: "include", "sì": "include",
+  exclude: "exclude", escludi: "exclude", escluso: "exclude", no: "exclude",
+  maybe: "maybe", forse: "maybe", dubbio: "maybe",
+};
+
+const S = {
+  repo: "", token: "", login: "",
+  state: null, records: new Map(), mine: [],
+  decisions: new Map(), decisionsSha: null, dirty: new Set(),
+  filter: "todo", search: "", currentId: null,
+  closed: false,
+  assignments: new Map(), others: new Map(), consensus: new Map(), consensusSha: null,
+};
+
+const $ = (id) => document.getElementById(id);
+
+// ---------------------------------------------------------------- helpers
+
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (value == null || value === false) continue;
+    if (key === "class") node.className = value;
+    else if (key === "text") node.textContent = value;
+    else if (key.startsWith("on")) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value === true ? "" : value);
+  }
+  for (const child of children.flat()) {
+    if (child == null || child === false) continue;
+    node.append(child instanceof Node ? child : document.createTextNode(String(child)));
+  }
+  return node;
+}
+
+function num(recordId) { return parseInt(String(recordId).slice(1), 10) || 0; }
+function normalizeDecision(value) { return DECISION_WORDS[String(value || "").trim().toLowerCase()] || ""; }
+function nowIso() { return new Date().toISOString(); }
+function formatDate(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleDateString("it-IT");
+}
+
+function storageGet(key) {
+  try { return localStorage.getItem(key) ?? sessionStorage.getItem(key); } catch { return null; }
+}
+function storageSet(key, value, remember = true) {
+  try {
+    (remember ? localStorage : sessionStorage).setItem(key, value);
+    (remember ? sessionStorage : localStorage).removeItem(key);
+  } catch { /* storage unavailable: nothing to remember */ }
+}
+function storageRemove(key) {
+  try { localStorage.removeItem(key); sessionStorage.removeItem(key); } catch { /* ignore */ }
+}
+
+function showBanner(text, isError = false) {
+  const banner = $("banner");
+  banner.textContent = text;
+  banner.className = isError ? "banner error" : "banner";
+  banner.hidden = !text;
+}
+
+// ---------------------------------------------------------------- CSV
+
+function parseCSV(text) {
+  if (text.charCodeAt(0) === 0xfeff) text = text.slice(1);
+  const newline = text.indexOf("\n");
+  const firstLine = newline === -1 ? text : text.slice(0, newline);
+  const delimiter = firstLine.split(";").length > firstLine.split(",").length ? ";" : ",";
+  const rows = [];
+  let row = [], field = "", quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false;
+      } else field += c;
+    } else if (c === '"') quoted = true;
+    else if (c === delimiter) { row.push(field); field = ""; }
+    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+    else if (c !== "\r") field += c;
+  }
+  if (field !== "" || row.length) { row.push(field); rows.push(row); }
+  const header = (rows.shift() || []).map((h) => h.trim());
+  return rows
+    .filter((r) => r.length > 1 || r[0] !== "")
+    .map((r) => Object.fromEntries(header.map((h, j) => [h, r[j] ?? ""])));
+}
+
+function toCSV(fields, rows) {
+  const quote = (value) => {
+    const s = value == null ? "" : String(value);
+    return /[",;\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  return [fields.join(","), ...rows.map((r) => fields.map((f) => quote(r[f])).join(","))].join("\n") + "\n";
+}
+
+// ---------------------------------------------------------------- GitHub API
+
+class ApiError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+
+function encodeBase64(text) {
+  const bytes = new TextEncoder().encode(text);
+  let binary = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(binary);
+}
+function decodeBase64(b64) {
+  const binary = atob(b64.replace(/\s/g, ""));
+  return new TextDecoder().decode(Uint8Array.from(binary, (c) => c.charCodeAt(0)));
+}
+function contentsUrl(path) {
+  return `${API}/repos/${S.repo}/contents/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+
+async function api(url, { method = "GET", accept = "application/vnd.github+json", body } = {}) {
+  let response;
+  try {
+    response = await fetch(url, {
+      method, cache: "no-store",
+      headers: {
+        Authorization: `Bearer ${S.token}`,
+        Accept: accept,
+        ...(body ? { "Content-Type": "application/json" } : {}),
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  } catch {
+    throw new ApiError(0, "Connessione a GitHub non riuscita. Controlla la rete e riprova.");
+  }
+  if (!response.ok) {
+    let detail = "";
+    try { detail = (await response.json()).message || ""; } catch { /* no body */ }
+    throw new ApiError(response.status, detail || `Errore GitHub ${response.status}`);
+  }
+  return response;
+}
+
+async function readFile(path) {
+  let meta;
+  try {
+    meta = await (await api(contentsUrl(path))).json();
+  } catch (error) {
+    if (error.status === 404) return null;
+    throw error;
+  }
+  if (Array.isArray(meta)) throw new ApiError(400, `${path} è una cartella, non un file.`);
+  let text;
+  if (meta.encoding === "base64" && meta.content) text = decodeBase64(meta.content);
+  else if (meta.size === 0) text = "";
+  else text = await (await api(contentsUrl(path), { accept: "application/vnd.github.raw+json" })).text();
+  return { text, sha: meta.sha };
+}
+
+async function listDir(path) {
+  try {
+    const items = await (await api(contentsUrl(path))).json();
+    return Array.isArray(items) ? items : [];
+  } catch (error) {
+    if (error.status === 404) return [];
+    throw error;
+  }
+}
+
+async function writeFile(path, text, sha, message) {
+  const body = { message, content: encodeBase64(text) };
+  if (sha) body.sha = sha;
+  const result = await (await api(contentsUrl(path), { method: "PUT", body })).json();
+  return result.content.sha;
+}
+
+function explain(error) {
+  if (error.status === 401) return "Il token non è valido o è scaduto: esci e inseriscine uno nuovo.";
+  if (error.status === 403) return "Il token non ha il permesso di scrittura. Serve un token con \"Contents: Read and write\" su questo repository.";
+  if (error.status === 404) return "Repository non trovato, oppure il token non ha accesso a questo repository.";
+  return error.message || "Errore imprevisto.";
+}
+
+// ---------------------------------------------------------------- saving
+
+const saving = { timer: null, busy: false, again: false, retry: null };
+
+function decisionsPath() { return `${STAGE_DIR}/decisions/${S.login}.csv`; }
+function pendingKey() { return `sysrev:pending:${S.repo}:${S.login}`; }
+
+function persistPending() {
+  const pending = [...S.dirty].map((id) => [id, S.decisions.get(id)]);
+  try {
+    if (pending.length) localStorage.setItem(pendingKey(), JSON.stringify(pending));
+    else localStorage.removeItem(pendingKey());
+  } catch { /* storage unavailable */ }
+}
+
+function setSaveState(kind, text) {
+  const badge = $("saveState");
+  badge.hidden = false;
+  badge.className = kind === "error" ? "save error" : "save";
+  badge.textContent = text;
+  badge.title = kind === "error" ? "Le decisioni sono al sicuro in questo browser: verranno salvate appena possibile." : "";
+}
+
+function refreshSaveState() {
+  if (S.dirty.size) setSaveState("pending", `${S.dirty.size} da salvare…`);
+  else setSaveState("saved", "Tutto salvato");
+}
+
+function mergeRemote(text) {
+  for (const row of parseCSV(text)) {
+    const decision = normalizeDecision(row.decision);
+    if (!row.record_id || !decision) continue;
+    const local = S.decisions.get(row.record_id);
+    if (!local || (row.updated_at || "") > (local.updated_at || "")) {
+      S.decisions.set(row.record_id, { record_id: row.record_id, decision, note: row.note || "", updated_at: row.updated_at || "" });
+      S.dirty.delete(row.record_id);
+    }
+  }
+}
+
+function scheduleSave() {
+  persistPending();
+  refreshSaveState();
+  clearTimeout(saving.timer);
+  if (S.dirty.size >= 20) saveNow();
+  else saving.timer = setTimeout(saveNow, 4000);
+}
+
+async function saveNow() {
+  clearTimeout(saving.timer);
+  clearTimeout(saving.retry);
+  if (!S.dirty.size) return;
+  if (saving.busy) { saving.again = true; return; }
+  saving.busy = true;
+  setSaveState("saving", "Salvataggio…");
+  const sent = new Map([...S.dirty].map((id) => [id, S.decisions.get(id).updated_at]));
+  try {
+    for (let attempt = 0; ; attempt++) {
+      const rows = [...S.decisions.values()].sort((a, b) => num(a.record_id) - num(b.record_id));
+      try {
+        S.decisionsSha = await writeFile(
+          decisionsPath(), toCSV(DECISION_FIELDS, rows), S.decisionsSha,
+          `Screening titolo/abstract: ${sent.size} decisioni (${S.login})`,
+        );
+        break;
+      } catch (error) {
+        // The file changed elsewhere (another tab or computer): merge and retry.
+        if ((error.status === 409 || error.status === 422) && attempt < 3) {
+          const remote = await readFile(decisionsPath());
+          S.decisionsSha = remote ? remote.sha : null;
+          if (remote) mergeRemote(remote.text);
+          continue;
+        }
+        throw error;
+      }
+    }
+    for (const [id, stamp] of sent) {
+      if (S.decisions.get(id)?.updated_at === stamp) S.dirty.delete(id);
+    }
+    persistPending();
+    refreshSaveState();
+  } catch (error) {
+    setSaveState("error", "Non salvato");
+    showBanner(`Salvataggio non riuscito: ${explain(error)} Le decisioni restano in questo browser e verranno salvate appena possibile.`, true);
+    saving.retry = setTimeout(saveNow, 30000);
+  } finally {
+    saving.busy = false;
+    if (saving.again) { saving.again = false; if (S.dirty.size) saveNow(); }
+  }
+}
+
+window.addEventListener("beforeunload", (event) => {
+  if (S.dirty.size) { saveNow(); event.preventDefault(); event.returnValue = ""; }
+});
+document.addEventListener("visibilitychange", () => { if (document.hidden && S.dirty.size) saveNow(); });
+
+// ---------------------------------------------------------------- highlighting
+
+let highlighter = null;
+
+function buildHighlighter(highlight) {
+  const toPattern = (term) => term.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/\\\*/g, "[\\p{L}\\p{N}]*");
+  const terms = (list) => (list || []).map((t) => String(t).replace(/\*/g, "").trim() ? toPattern(String(t)) : "").filter(Boolean);
+  const include = terms(highlight && highlight.include);
+  const exclude = terms(highlight && highlight.exclude);
+  if (!include.length && !exclude.length) return null;
+  const group = (list) => (list.length ? list.join("|") : "(?!)");
+  return new RegExp(`(?<![\\p{L}\\p{N}])(?:(${group(include)})|(${group(exclude)}))(?![\\p{L}\\p{N}])`, "giu");
+}
+
+function highlighted(text) {
+  const fragment = document.createDocumentFragment();
+  if (!highlighter || !text) { fragment.append(text || ""); return fragment; }
+  let last = 0;
+  for (const match of text.matchAll(highlighter)) {
+    if (!match[0]) continue;
+    fragment.append(text.slice(last, match.index));
+    fragment.append(el("mark", { class: match[1] !== undefined ? "hl-include" : "hl-exclude", text: match[0] }));
+    last = match.index + match[0].length;
+  }
+  fragment.append(text.slice(last));
+  return fragment;
+}
+
+// ---------------------------------------------------------------- record rendering
+
+function safeUrl(url) { return /^https?:\/\//i.test(url || "") ? url : null; }
+
+function recordLinks(record) {
+  const links = [];
+  if (record.pmid) links.push(el("a", { href: `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(record.pmid)}/`, target: "_blank", rel: "noopener", text: "PubMed" }));
+  if (record.doi) links.push(el("a", { href: `https://doi.org/${encodeURI(record.doi)}`, target: "_blank", rel: "noopener", text: `DOI ${record.doi}` }));
+  if (record.pmcid) links.push(el("a", { href: `https://pmc.ncbi.nlm.nih.gov/articles/${encodeURIComponent(record.pmcid)}/`, target: "_blank", rel: "noopener", text: "Full text PMC" }));
+  if (!record.pmid && !record.doi && safeUrl(record.url)) links.push(el("a", { href: safeUrl(record.url), target: "_blank", rel: "noopener", text: "Link" }));
+  return links;
+}
+
+function recordBody(record) {
+  const authors = (record.authors || "").split(";").map((a) => a.trim()).filter(Boolean);
+  const shownAuthors = authors.length > 8 ? `${authors.slice(0, 8).join("; ")} … (+${authors.length - 8})` : authors.join("; ");
+  const source = [record.journal, record.year,
+    record.volume ? `${record.volume}${record.issue ? `(${record.issue})` : ""}` : "", record.pages]
+    .filter(Boolean).join(" · ");
+  const types = (record.publication_types || "").split(";").map((t) => t.trim()).filter(Boolean);
+  const abstract = (record.abstract || "").split("\n").filter(Boolean);
+  const language = (record.language || "").toLowerCase();
+  const extra = [];
+  if (language && !["eng", "english", "en"].includes(language)) extra.push(el("div", {}, "Lingua: ", record.language));
+  if (record.keywords) extra.push(el("div", {}, "Parole chiave: ", highlighted(record.keywords)));
+  if (record.mesh_terms) extra.push(el("div", {}, "MeSH: ", record.mesh_terms));
+  return [
+    el("div", { class: "record-meta" }, el("span", { class: "badge", text: record.record_id }),
+      types.map((t) => el("span", { class: "badge", text: t }))),
+    el("h2", {}, highlighted(record.title || "(senza titolo)")),
+    shownAuthors ? el("div", { class: "authors", text: shownAuthors }) : null,
+    source ? el("div", { class: "source", text: source }) : null,
+    el("div", { class: "abstract" },
+      abstract.length ? abstract.map((p) => el("p", {}, highlighted(p))) : el("p", { class: "muted", text: "Abstract non disponibile." })),
+    extra.length ? el("div", { class: "extra" }, extra) : null,
+    el("div", { class: "links" }, recordLinks(record)),
+  ];
+}
+
+// ---------------------------------------------------------------- screening view
+
+function visibleIds() {
+  const query = S.search.trim().toLowerCase();
+  return S.mine.filter((id) => {
+    const decision = S.decisions.get(id)?.decision;
+    if (S.filter === "todo" && decision) return false;
+    if (S.filter === "done" && !decision) return false;
+    if (["include", "maybe", "exclude"].includes(S.filter) && decision !== S.filter) return false;
+    if (!query) return true;
+    const r = S.records.get(id) || {};
+    return `${r.title} ${r.abstract} ${r.authors} ${id}`.toLowerCase().includes(query);
+  });
+}
+
+function updateProgress() {
+  const done = S.mine.filter((id) => S.decisions.has(id)).length;
+  const total = S.mine.length;
+  $("progressBar").style.width = total ? `${(100 * done) / total}%` : "0";
+  $("user").textContent = `${S.login} · ${done}/${total}`;
+}
+
+function renderScreen() {
+  updateProgress();
+  const ids = visibleIds();
+  let index = ids.indexOf(S.currentId);
+  if (index === -1) index = 0;
+  S.currentId = ids[index] ?? null;
+  $("position").textContent = ids.length ? `Record ${index + 1} di ${ids.length}` : "";
+  $("prev").disabled = index <= 0;
+  $("next").disabled = index >= ids.length - 1;
+
+  const card = $("record");
+  card.replaceChildren();
+  const record = S.records.get(S.currentId);
+  const decideBar = $("decideBar");
+  if (!record) {
+    decideBar.hidden = true;
+    const allDone = S.mine.length && S.mine.every((id) => S.decisions.has(id));
+    card.append(el("p", { text: allDone && S.filter === "todo"
+      ? "Hai valutato tutti i tuoi record. Grazie! Puoi rivederli scegliendo \"Tutti\"."
+      : "Nessun record da mostrare con questo filtro." }));
+    return;
+  }
+  card.append(...recordBody(record).filter(Boolean));
+  decideBar.hidden = false;
+  const current = S.decisions.get(record.record_id);
+  for (const button of document.querySelectorAll(".choice")) {
+    button.setAttribute("aria-pressed", String(current?.decision === button.dataset.decision));
+    button.disabled = S.closed;
+  }
+  const note = $("note");
+  note.value = current?.note || "";
+  note.disabled = S.closed;
+}
+
+function move(step) {
+  const ids = visibleIds();
+  const index = ids.indexOf(S.currentId);
+  const target = ids[Math.min(Math.max(index + step, 0), ids.length - 1)];
+  if (target) { S.currentId = target; renderScreen(); window.scrollTo(0, 0); }
+}
+
+function decide(decision) {
+  if (S.closed || !S.currentId) return;
+  const id = S.currentId;
+  const ids = visibleIds();
+  const nextId = ids[ids.indexOf(id) + 1] ?? null;
+  S.decisions.set(id, { record_id: id, decision, note: $("note").value.trim(), updated_at: nowIso() });
+  S.dirty.add(id);
+  scheduleSave();
+  // Go on to the next record of the list (in "Da fare" the decided record leaves the list).
+  S.currentId = S.filter === "todo" ? nextId : (nextId ?? id);
+  renderScreen();
+  window.scrollTo(0, 0);
+}
+
+function saveNote() {
+  const current = S.decisions.get(S.currentId);
+  const text = $("note").value.trim();
+  if (!current || S.closed || current.note === text) return;
+  S.decisions.set(S.currentId, { ...current, note: text, updated_at: nowIso() });
+  S.dirty.add(S.currentId);
+  scheduleSave();
+}
+
+// ---------------------------------------------------------------- conflicts view
+
+function outcomeOf(recordId) {
+  const reviewers = S.assignments.get(recordId) || [];
+  const values = {};
+  for (const reviewer of reviewers) {
+    const row = reviewer === S.login ? S.decisions.get(recordId) : S.others.get(reviewer)?.get(recordId);
+    if (row) values[reviewer] = row;
+  }
+  const decisions = new Set(Object.values(values).map((v) => v.decision));
+  if (Object.keys(values).length < reviewers.length) return { kind: "pending", values };
+  if (decisions.size === 1 && (decisions.has("include") || decisions.has("exclude"))) return { kind: "agreement", values };
+  if (S.state.conflicts === "include_if_any") return { kind: "include_if_any", values };
+  return { kind: S.consensus.has(recordId) ? "resolved" : "open", values };
+}
+
+function canDecideConflict(reviewers) {
+  if (S.state.conflicts === "third_reviewer") return S.login === S.state.arbiter;
+  return true;
+}
+
+function renderConflicts() {
+  const filter = $("conflictFilter").value;
+  const onlyMine = $("onlyMine").checked;
+  const list = $("conflictList");
+  list.replaceChildren();
+  let open = 0, resolved = 0, shown = 0;
+  for (const id of [...S.assignments.keys()].sort((a, b) => num(a) - num(b))) {
+    const outcome = outcomeOf(id);
+    if (outcome.kind !== "open" && outcome.kind !== "resolved") continue;
+    outcome.kind === "open" ? open++ : resolved++;
+    const reviewers = S.assignments.get(id);
+    if (onlyMine && !reviewers.includes(S.login)) continue;
+    if (filter !== "all" && filter !== outcome.kind) continue;
+    shown++;
+    list.append(conflictCard(id, outcome, reviewers));
+  }
+  $("conflictCount").textContent = `${open} da risolvere · ${resolved} risolti`;
+  $("tabConflicts").textContent = `Conflitti (${open})`;
+  if (!shown) list.append(el("div", { class: "card muted", text: "Nessun conflitto da mostrare con questi filtri." }));
+}
+
+function conflictCard(id, outcome, reviewers) {
+  const record = S.records.get(id) || { record_id: id, title: id };
+  const agreed = S.consensus.get(id);
+  const editable = canDecideConflict(reviewers);
+  const note = el("input", { type: "text", placeholder: "Nota sulla decisione (facoltativa)", value: agreed?.note || "", disabled: !editable });
+  const choose = (decision) => saveConsensus(id, decision, note.value.trim());
+  const body = recordBody(record);
+  return el("article", { class: "card record", "data-record": id },
+    body.slice(0, 4),
+    el("details", {}, el("summary", { class: "small", text: "Abstract e dettagli" }), body.slice(4)),
+    el("ul", { class: "decision-list" }, reviewers.map((reviewer) => {
+      const row = outcome.values[reviewer];
+      return el("li", {}, el("strong", { text: reviewer }), ": ",
+        row ? el("span", { class: `tag ${row.decision}`, text: LABELS[row.decision] }) : el("span", { class: "muted", text: "nessuna decisione" }),
+        row?.note ? el("span", { class: "muted" }, " — ", row.note) : null);
+    })),
+    agreed
+      ? el("p", {}, "Decisione concordata: ", el("span", { class: `tag ${agreed.decision}`, text: LABELS[agreed.decision] }),
+          el("span", { class: "muted small", text: ` (registrata da ${agreed.decided_by}${agreed.updated_at ? `, ${formatDate(agreed.updated_at)}` : ""})` }))
+      : null,
+    editable
+      ? el("div", { class: "consensus" },
+          el("button", { class: "choice include", "aria-pressed": String(agreed?.decision === "include"), onclick: () => choose("include") }, "Includi"),
+          el("button", { class: "choice exclude", "aria-pressed": String(agreed?.decision === "exclude"), onclick: () => choose("exclude") }, "Escludi"),
+          note)
+      : el("p", { class: "muted small", text: `La decisione spetta a ${S.state.arbiter}.` }),
+  );
+}
+
+async function saveConsensus(recordId, decision, note) {
+  const row = { record_id: recordId, decision, note, decided_by: S.login, updated_at: nowIso() };
+  S.consensus.set(recordId, row);
+  setSaveState("saving", "Salvataggio…");
+  try {
+    for (let attempt = 0; ; attempt++) {
+      const rows = [...S.consensus.values()].sort((a, b) => num(a.record_id) - num(b.record_id));
+      try {
+        S.consensusSha = await writeFile(`${STAGE_DIR}/consensus.csv`, toCSV(CONSENSUS_FIELDS, rows), S.consensusSha,
+          `Screening titolo/abstract: decisione concordata su ${recordId} (${S.login})`);
+        break;
+      } catch (error) {
+        if ((error.status === 409 || error.status === 422) && attempt < 3) {
+          const remote = await readFile(`${STAGE_DIR}/consensus.csv`);
+          S.consensusSha = remote ? remote.sha : null;
+          if (remote) loadConsensus(remote.text, true);
+          continue;
+        }
+        throw error;
+      }
+    }
+    refreshSaveState();
+    showBanner("");
+  } catch (error) {
+    setSaveState("error", "Non salvato");
+    showBanner(`Decisione concordata non salvata: ${explain(error)}`, true);
+  }
+  renderConflicts();
+}
+
+function loadConsensus(text, keepNewer = false) {
+  for (const row of parseCSV(text)) {
+    const decision = normalizeDecision(row.decision);
+    if (!row.record_id || !["include", "exclude"].includes(decision)) continue;
+    const local = S.consensus.get(row.record_id);
+    if (keepNewer && local && (local.updated_at || "") >= (row.updated_at || "")) continue;
+    S.consensus.set(row.record_id, { ...row, decision });
+  }
+}
+
+// ---------------------------------------------------------------- loading
+
+function showView(name) {
+  for (const view of ["loginView", "loadingView", "screenView", "conflictsView"]) $(view).hidden = view !== name;
+  if (name !== "screenView") $("decideBar").hidden = true;
+}
+
+function loading(text) { $("loadingText").textContent = text; showView("loadingView"); }
+
+async function start() {
+  showBanner("");
+  loading("Accesso a GitHub…");
+  try {
+    const user = await (await api(`${API}/user`)).json();
+    S.login = String(user.login).toLowerCase();
+    await api(`${API}/repos/${S.repo}`);
+  } catch (error) {
+    showBanner(explain(error), true);
+    return showLogin();
+  }
+  $("logout").hidden = false;
+  $("user").textContent = S.login;
+
+  try {
+    loading("Caricamento delle impostazioni…");
+    const stateFile = await readFile(`${STAGE_DIR}/state.json`);
+    if (!stateFile) {
+      showView(null);
+      return showBanner("Lo screening non è ancora stato preparato. Chi coordina deve lanciare \"sysrev screening assign\" e caricare le modifiche su GitHub.", true);
+    }
+    S.state = JSON.parse(stateFile.text);
+    S.closed = S.state.status === "closed";
+    $("reviewTitle").textContent = S.state.title || S.repo;
+    document.title = `Screening · ${S.state.title || S.repo}`;
+    highlighter = buildHighlighter(S.state.highlight);
+
+    loading("Caricamento dei record…");
+    const [recordsFile, assignmentsFile, decisionsFile] = await Promise.all([
+      readFile(RECORDS_PATH), readFile(`${STAGE_DIR}/assignments.csv`), readFile(decisionsPath()),
+    ]);
+    for (const record of parseCSV(recordsFile ? recordsFile.text : "")) S.records.set(record.record_id, record);
+    S.assignments = new Map();
+    for (const row of parseCSV(assignmentsFile ? assignmentsFile.text : "")) {
+      const reviewer = (row.reviewer || "").trim().toLowerCase();
+      if (!row.record_id || !reviewer) continue;
+      if (!S.assignments.has(row.record_id)) S.assignments.set(row.record_id, []);
+      S.assignments.get(row.record_id).push(reviewer);
+    }
+    S.mine = [...S.assignments.entries()]
+      .filter(([id, reviewers]) => reviewers.includes(S.login) && S.records.has(id))
+      .map(([id]) => id).sort((a, b) => num(a) - num(b));
+
+    S.decisionsSha = decisionsFile ? decisionsFile.sha : null;
+    if (decisionsFile) mergeRemote(decisionsFile.text);
+    restorePending();
+  } catch (error) {
+    showView(null);
+    return showBanner(`Caricamento non riuscito: ${explain(error)}`, true);
+  }
+
+  if (!S.mine.length && !S.closed) {
+    showView(null);
+    return showBanner(`Non hai record assegnati in questa review. Chiedi a chi coordina di controllare che "${S.login}" sia tra i reviewers in review.yml e di lanciare "sysrev screening assign".`, true);
+  }
+  if (S.closed) {
+    S.filter = "all";
+    $("filter").value = "all";
+    await loadClosed();
+  } else showBanner("");
+  $("tabs").hidden = !S.closed || S.state.conflicts === "include_if_any";
+  selectTab("screen");
+}
+
+function restorePending() {
+  let pending = [];
+  try { pending = JSON.parse(localStorage.getItem(pendingKey()) || "[]"); } catch { pending = []; }
+  for (const [id, row] of pending) {
+    const remote = S.decisions.get(id);
+    if (row && (!remote || (row.updated_at || "") > (remote.updated_at || ""))) {
+      S.decisions.set(id, row);
+      S.dirty.add(id);
+    }
+  }
+  if (S.dirty.size) saveNow(); else refreshSaveState();
+}
+
+async function loadClosed() {
+  loading("Caricamento delle decisioni di tutti i revisori…");
+  S.others = new Map();
+  const files = (await listDir(`${STAGE_DIR}/decisions`)).filter((f) => f.type === "file" && f.name.endsWith(".csv"));
+  await Promise.all(files.map(async (file) => {
+    const reviewer = file.name.slice(0, -4).toLowerCase();
+    if (reviewer === S.login) return;
+    const content = await readFile(file.path);
+    const rows = new Map();
+    for (const row of parseCSV(content ? content.text : "")) {
+      const decision = normalizeDecision(row.decision);
+      if (row.record_id && decision) rows.set(row.record_id, { ...row, decision });
+    }
+    S.others.set(reviewer, rows);
+  }));
+  const consensus = await readFile(`${STAGE_DIR}/consensus.csv`);
+  S.consensus = new Map();
+  S.consensusSha = consensus ? consensus.sha : null;
+  if (consensus) loadConsensus(consensus.text);
+  $("onlyMine").checked = S.state.conflicts !== "third_reviewer" || S.login !== S.state.arbiter;
+  showBanner("Lo screening è chiuso: le decisioni non si possono più cambiare. Nella scheda Conflitti trovi i record su cui i revisori non erano d'accordo.");
+}
+
+function selectTab(name) {
+  $("tabScreen").setAttribute("aria-selected", String(name === "screen"));
+  $("tabConflicts").setAttribute("aria-selected", String(name === "conflicts"));
+  if (name === "conflicts") { showView("conflictsView"); renderConflicts(); }
+  else { showView("screenView"); renderScreen(); }
+  if (S.closed && S.state.conflicts !== "include_if_any" && name === "screen") renderConflictsCount();
+}
+
+function renderConflictsCount() {
+  let open = 0;
+  for (const id of S.assignments.keys()) if (outcomeOf(id).kind === "open") open++;
+  $("tabConflicts").textContent = `Conflitti (${open})`;
+}
+
+function updateGuideLink() {
+  const repo = $("repoInput").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/+$/, "");
+  const guide = $("guide");
+  if (!/^[\w.-]+\/[\w.-]+$/.test(repo)) { guide.textContent = "La guida per i revisori, nel repository della review, spiega come creare il token."; return; }
+  guide.replaceChildren("Come creare il token: ",
+    el("a", { href: `https://github.com/${repo}/blob/HEAD/guida-revisori.md`, target: "_blank", rel: "noopener", text: "guida per i revisori" }), ".");
+}
+
+function showLogin() {
+  showView("loginView");
+  $("repoInput").value = S.repo;
+  updateGuideLink();
+  $("tokenInput").value = "";
+  $("tokenInput").focus();
+}
+
+// ---------------------------------------------------------------- events
+
+$("loginForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  S.repo = $("repoInput").value.trim().replace(/^https?:\/\/github\.com\//, "").replace(/\/+$/, "");
+  S.token = $("tokenInput").value.trim();
+  const remember = $("rememberInput").checked;
+  storageSet("sysrev:repo", S.repo, true);
+  storageSet("sysrev:token", S.token, remember);
+  start();
+});
+
+$("repoInput").addEventListener("input", updateGuideLink);
+
+$("logout").addEventListener("click", () => {
+  if (S.dirty.size && !confirm("Ci sono decisioni non ancora salvate su GitHub. Uscire comunque? Resteranno in questo browser.")) return;
+  storageRemove("sysrev:token");
+  location.reload();
+});
+
+for (const button of document.querySelectorAll(".choice[data-decision]")) {
+  button.addEventListener("click", () => decide(button.dataset.decision));
+}
+$("prev").addEventListener("click", () => move(-1));
+$("next").addEventListener("click", () => move(1));
+$("note").addEventListener("change", saveNote);
+$("filter").addEventListener("change", () => { S.filter = $("filter").value; S.currentId = null; renderScreen(); });
+$("search").addEventListener("input", () => { S.search = $("search").value; S.currentId = null; renderScreen(); });
+$("helpButton").addEventListener("click", () => { $("help").hidden = !$("help").hidden; });
+$("tabScreen").addEventListener("click", () => selectTab("screen"));
+$("tabConflicts").addEventListener("click", () => selectTab("conflicts"));
+$("conflictFilter").addEventListener("change", renderConflicts);
+$("onlyMine").addEventListener("change", renderConflicts);
+
+document.addEventListener("keydown", (event) => {
+  if ($("screenView").hidden || event.metaKey || event.ctrlKey || event.altKey) return;
+  const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(event.target.tagName);
+  if (typing) {
+    if (event.key === "Enter" && event.target.id === "note") { event.target.blur(); }
+    return;
+  }
+  const key = event.key.toLowerCase();
+  if (key === "i") decide("include");
+  else if (key === "f") decide("maybe");
+  else if (key === "e") decide("exclude");
+  else if (key === "arrowleft") move(-1);
+  else if (key === "arrowright") move(1);
+  else if (key === "n" && !S.closed) { event.preventDefault(); $("note").focus(); }
+  else return;
+  event.preventDefault();
+});
+
+// ---------------------------------------------------------------- boot
+
+(function boot() {
+  const params = new URLSearchParams(location.search);
+  S.repo = params.get("repo") || storageGet("sysrev:repo") || "";
+  S.token = storageGet("sysrev:token") || "";
+  if (params.get("repo")) storageSet("sysrev:repo", S.repo, true);
+  if (S.repo && S.token) start();
+  else showLogin();
+})();
+</script>
+</body>
+</html>
