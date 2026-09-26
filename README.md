@@ -1,7 +1,7 @@
 # Pagina di screening
 
-Pagina web per lo screening (titolo e abstract, full text) e per l'estrazione dei dati delle
-systematic review di `sysrev-org`.
+Pagina web per lo screening (titolo e abstract, full text), l'estrazione dei dati e il rischio di bias
+delle systematic review di `sysrev-org`.
 
 **Indirizzo**: `https://sysrev-org.github.io/screening/?repo=sysrev-org/NOME-DELLA-REVIEW`
 (chi coordina manda il link completo ai revisori).

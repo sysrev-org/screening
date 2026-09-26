@@ -125,7 +125,15 @@ body.wide header .bar, body.wide main, body.wide .decide .bar { max-width: 1500p
 .ex-field > label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 3px; }
 .ex-field .help { color: var(--muted); font-size: 13px; margin: -2px 0 4px; }
 .ex-input { display: flex; gap: 6px; align-items: flex-start; }
-.ex-input > input, .ex-input > select, .ex-input > textarea, .ex-input > .checks { flex: 1 1 auto; min-width: 0; width: 100%; }
+.ex-input > input, .ex-input > select, .ex-input > textarea, .ex-input > .checks, .ex-input > .judgments { flex: 1 1 auto; min-width: 0; width: 100%; }
+.judgments { display: flex; flex-wrap: wrap; gap: 6px; }
+.judgment { border: 2px solid var(--border); background: var(--card); border-radius: 999px; padding: 3px 12px 3px 3px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.judgment .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--level); color: #ffffff; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.judgment[aria-pressed="true"] { border-color: var(--level); background: color-mix(in srgb, var(--level) 18%, var(--card)); font-weight: 600; }
+.judgment:disabled { cursor: default; }
+.ex-form .section-help { margin: -4px 0 10px; }
 .ex-input textarea { resize: vertical; }
 .ex-field.diff { background: var(--maybe-bg); }
 .ex-field.changed { background: var(--changed-bg); }
@@ -174,7 +182,7 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
   <div id="banner" class="banner" hidden></div>
 
   <section id="loginView" class="card login" hidden>
-    <h1 style="margin-top:0">Screening ed estrazione dei dati</h1>
+    <h1 style="margin-top:0">Screening, estrazione dei dati e rischio di bias</h1>
     <p class="muted">Per entrare servono il nome del repository della review e il tuo token GitHub.
       <span id="guide">La guida per i revisori, nel repository della review, spiega come creare il token.</span></p>
     <form id="loginForm">
@@ -194,6 +202,7 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
     <button class="tab" data-stage="title_abstract" aria-selected="false">Titolo e abstract</button>
     <button class="tab" data-stage="full_text" aria-selected="false">Full text</button>
     <button class="tab" data-stage="extraction" aria-selected="false">Estrazione dati</button>
+    <button class="tab" data-stage="risk_of_bias" aria-selected="false">Rischio di bias</button>
   </nav>
 
   <nav class="tabs" id="tabs" hidden>
@@ -252,12 +261,14 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
       </div>
       <details class="card help" id="exHelp">
         <summary><strong>Come funziona</strong></summary>
+        <div id="exHelpText">
         <p>Apri uno studio: a sinistra c'è il testo, a destra la scheda da compilare. Per indicare da dove viene
           un dato, seleziona la frase nel testo e clicca <strong>📎</strong> accanto al campo (con il PDF puoi
           scriverlo tu, per esempio "Tabella 2"). Nei risultati va una riga per ogni combinazione di outcome,
           momento e gruppo.</p>
         <p>Le schede si salvano da sole su GitHub. Quando hai finito uno studio clicca
           <strong>Segna come completata</strong>: finché l'estrazione è aperta puoi sempre riaprirla.</p>
+        </div>
       </details>
       <div id="exList"></div>
     </div>
@@ -298,7 +309,25 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
 
 const API = "https://api.github.com";
 const RECORDS_PATH = "records/records.csv";
-const STAGES = { title_abstract: "titolo/abstract", full_text: "full text", extraction: "estrazione dei dati" };
+const STAGES = { title_abstract: "titolo/abstract", full_text: "full text", extraction: "estrazione dei dati", risk_of_bias: "rischio di bias" };
+// Stages done with forms (one per reviewer and study): same page, different words.
+const FORM_STAGES = {
+  extraction: {
+    brand: "Estrazione dei dati", name: "estrazione dei dati", the: "L'estrazione", command: "sysrev extraction assign",
+    title: "Scheda di estrazione", commit: "Estrazione", values: "valori", agreed: "Valori concordati",
+  },
+  risk_of_bias: {
+    brand: "Rischio di bias", name: "valutazione del rischio di bias", the: "La valutazione del rischio di bias",
+    command: "sysrev rob assign", title: "Rischio di bias", commit: "Rischio di bias", values: "giudizi", agreed: "Giudizi concordati",
+    help: [
+      "Apri uno studio: a sinistra c'è il testo, a destra i domini dello strumento indicato accanto allo studio (per esempio RoB 2). "
+        + "Per ogni dominio scegli il giudizio e scrivi la motivazione; con 📎 colleghi le frasi del testo su cui si basa. "
+        + "Tieni aperto lo strumento ufficiale, con le domande guida.",
+      "Il giudizio complessivo viene proposto (il peggiore tra i domini): puoi accettarlo o cambiarlo. Le schede si salvano da sole; "
+        + "alla fine clicca «Segna come completata».",
+    ],
+  },
+};
 const DECISION_FIELDS = {
   title_abstract: ["record_id", "decision", "note", "updated_at"],
   full_text: ["record_id", "decision", "reason", "note", "updated_at"],
@@ -1089,10 +1118,18 @@ const EX = {
   mine: [], roles: new Map(), extractors: new Map(), verifiers: new Map(),
   docs: new Map(), others: new Map(), consensus: new Map(), shas: new Map(), dirty: new Set(),
   current: null, editing: "mine", tab: "mine", selection: "", formBox: null, plain: new Map(),
+  tools: {}, toolOf: new Map(),  // risk of bias: the tool (form) of each study
 };
+
+// The form of a study: the risk of bias uses one per tool; call it before looking at a study's fields.
+function useForm(id) {
+  const forms = EX.state && EX.state.forms;
+  EX.form = (forms && forms[EX.toolOf.get(id)]) || (EX.state && EX.state.form) || { study: [], results: [] };
+}
 const YES_NO = { yes: "yes", si: "yes", "sì": "yes", true: "yes", no: "no", false: "no" };
 const NUMBER = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
-const isExtraction = () => S.stage === "extraction";
+const isFormStage = () => S.stage in FORM_STAGES;
+const words = () => FORM_STAGES[S.stage];
 const studyFields = () => (EX.form.study || []).filter((item) => item.id);
 const resultFields = () => EX.form.results || [];
 const keyFields = () => resultFields().filter((f) => f.key);
@@ -1166,6 +1203,8 @@ function exNormalize(spec, value) {
 }
 function exDisplay(spec, value) {
   if (Array.isArray(value)) return value.join("; ");
+  const level = Array.isArray(spec.scale) && spec.scale.find((l) => l.id === value);
+  if (level) return level.label;
   const text = String(value ?? "").trim();
   if (spec.type === "yes_no" && text) return { yes: "sì", no: "no" }[YES_NO[exText(text)]] || text;
   return text;
@@ -1211,10 +1250,10 @@ function differs(spec, cells) {
 function exCompare(docs) {
   const names = Object.keys(docs);
   let count = 0;
-  for (const spec of studyFields()) if (differs(spec, names.map((r) => docs[r].study[spec.id]))) count++;
+  for (const spec of studyFields()) if (spec.compare !== false && differs(spec, names.map((r) => docs[r].study[spec.id]))) count++;
   for (const { rows } of alignRows(docs)) {
     if (names.some((r) => !rows[r])) { count++; continue; }
-    for (const spec of resultFields()) if (!spec.key && differs(spec, names.map((r) => rows[r][spec.id]))) count++;
+    for (const spec of resultFields()) if (spec.compare !== false && !spec.key && differs(spec, names.map((r) => rows[r][spec.id]))) count++;
   }
   return count;
 }
@@ -1231,6 +1270,7 @@ function doneDocs(id) {
 }
 
 function exOutcome(id) {
+  useForm(id);
   const names = EX.extractors.get(id) || [];
   const docs = doneDocs(id);
   if (!names.length || Object.keys(docs).length < names.length) return { kind: "pending", count: 0 };
@@ -1249,7 +1289,12 @@ function buildConsensus(id) {
   const firstSource = (cells) => cells.find((c) => c?.source)?.source || "";
   for (const spec of studyFields()) {
     const cells = names.map((r) => docs[r].study[spec.id]);
-    if (!differs(spec, cells) && hasValue(cells[0])) doc.study[spec.id] = { value: clone(cells[0].value), source: firstSource(cells) };
+    if (spec.compare === false) {
+      // Free text (e.g. the support of a judgment): everyone's, as sysrev does for agreed studies.
+      const texts = names.map((r, i) => [r, String(cells[i]?.value || "").trim()]).filter(([, text]) => text);
+      const value = new Set(texts.map(([, text]) => text)).size > 1 ? texts.map(([r, text]) => `${r}: ${text}`).join("\n") : (texts[0]?.[1] || "");
+      if (value) doc.study[spec.id] = { value, source: firstSource(cells) };
+    } else if (!differs(spec, cells) && hasValue(cells[0])) doc.study[spec.id] = { value: clone(cells[0].value), source: firstSource(cells) };
   }
   for (const { rows } of alignRows(docs)) {
     const present = names.filter((r) => rows[r]);
@@ -1309,11 +1354,11 @@ function aiSummary(spec, cell, text) {
 // --- files
 
 const exSaving = { timer: null, busy: false, again: false, retry: null };
-const exBackupKey = () => `sysrev:extraction:${S.repo}:${S.login}`;
+const exBackupKey = () => `sysrev:${S.stage}:${S.repo}:${S.login}`;
 
 function exPath(key) {
   const [kind, id] = key.split(":");
-  return kind === "consensus" ? `extraction/consensus/${id}.json` : `extraction/data/${S.login}/${id}.json`;
+  return kind === "consensus" ? `${S.stage}/consensus/${id}.json` : `${S.stage}/data/${S.login}/${id}.json`;
 }
 function exDocByKey(key) {
   const [kind, id] = key.split(":");
@@ -1361,7 +1406,7 @@ async function exSaveNow() {
       let replaced = false;
       for (let attempt = 0; ; attempt++) {
         try {
-          EX.shas.set(path, await writeFile(path, serializeDoc(doc), EX.shas.get(path), `Estrazione: ${what} (${S.login})`));
+          EX.shas.set(path, await writeFile(path, serializeDoc(doc), EX.shas.get(path), `${words().commit}: ${what} (${S.login})`));
           break;
         } catch (error) {
           // Saved meanwhile from another tab or computer: the newest version wins.
@@ -1400,9 +1445,9 @@ async function inBatches(items, task, size = 6) {
 }
 
 async function loadDocs(reviewer, ids, target, keepSha) {
-  const present = new Set((await listDir(`extraction/data/${reviewer}`)).map((f) => f.name));
+  const present = new Set((await listDir(`${S.stage}/data/${reviewer}`)).map((f) => f.name));
   await inBatches(ids.filter((id) => present.has(`${id}.json`)), async (id) => {
-    const path = `extraction/data/${reviewer}/${id}.json`;
+    const path = `${S.stage}/data/${reviewer}/${id}.json`;
     const file = await readFile(path);
     const doc = file && parseDoc(file.text, id, reviewer);
     if (!doc) return;
@@ -1416,16 +1461,22 @@ async function loadDocs(reviewer, ids, target, keepSha) {
 async function startExtraction(stateText) {
   EX.state = JSON.parse(stateText);
   EX.form = EX.state.form || { study: [], results: [] };
+  EX.tools = EX.state.tools || {};
   EX.closed = EX.state.status === "closed";
   document.body.classList.add("wide");
   $("reviewTitle").textContent = EX.state.title || S.repo;
-  document.title = `Estrazione dati · ${EX.state.title || S.repo}`;
+  document.title = `${words().brand} · ${EX.state.title || S.repo}`;
+  if (words().help) $("exHelpText").replaceChildren(...words().help.map((text) => el("p", { text })));
   highlighter = buildHighlighter(EX.state.highlight);
   try {
     loading("Caricamento degli studi…");
-    const [recordsFile, assignmentsFile, mdList, pdfList] = await Promise.all([
-      readFile(RECORDS_PATH), readFile("extraction/assignments.csv"), listDir("fulltext/md"), listDir("fulltext/pdf"),
+    const [recordsFile, assignmentsFile, mdList, pdfList, toolsFile] = await Promise.all([
+      readFile(RECORDS_PATH), readFile(`${S.stage}/assignments.csv`), listDir("fulltext/md"), listDir("fulltext/pdf"),
+      EX.state.forms ? readFile(`${S.stage}/studies.csv`) : null,
     ]);
+    for (const row of parseCSV(toolsFile ? toolsFile.text : "")) {
+      if (row.record_id && row.tool) EX.toolOf.set(row.record_id, row.tool.trim());
+    }
     for (const record of parseCSV(recordsFile ? recordsFile.text : "")) S.records.set(record.record_id, record);
     S.mdFiles = new Set(mdList.filter((f) => f.name.endsWith(".md")).map((f) => f.name.slice(0, -3)));
     S.pdfFiles = new Set(pdfList.filter((f) => f.name.endsWith(".pdf")).map((f) => f.name.slice(0, -4)));
@@ -1455,7 +1506,7 @@ async function startExtraction(stateText) {
     if (EX.closed && isDouble()) {
       // Closed: everyone's data can be compared.
       for (const [id, reviewers] of EX.extractors) for (const reviewer of reviewers) want(reviewer, id);
-      const consensus = (await listDir("extraction/consensus")).filter((f) => f.name.endsWith(".json"));
+      const consensus = (await listDir(`${S.stage}/consensus`)).filter((f) => f.name.endsWith(".json"));
       await inBatches(consensus, async (f) => {
         const file = await readFile(f.path);
         const id = f.name.slice(0, -5);
@@ -1476,12 +1527,12 @@ async function startExtraction(stateText) {
   const canCompare = EX.closed && isDouble();
   if (!EX.mine.length && !canCompare) {
     showView(null);
-    return showBanner(`Non hai studi assegnati nell'estrazione dei dati. Chiedi a chi coordina di controllare che "${S.login}" sia tra i revisori in review.yml e di lanciare "sysrev extraction assign".`, true);
+    return showBanner(`Non hai studi assegnati nella ${words().name}. Chiedi a chi coordina di controllare che "${S.login}" sia tra i revisori in review.yml e di lanciare "${words().command}".`, true);
   }
   if (EX.closed) {
     showBanner(canCompare
-      ? "L'estrazione è chiusa: le schede non si possono più cambiare. Nella scheda Differenze trovi gli studi con valori diversi tra i revisori."
-      : "L'estrazione è chiusa: le schede non si possono più cambiare.");
+      ? `${words().the} è chiusa: le schede non si possono più cambiare. Nella scheda Differenze trovi gli studi con ${words().values} diversi tra i revisori.`
+      : `${words().the} è chiusa: le schede non si possono più cambiare.`);
   } else showBanner("");
   $("exTabs").hidden = !canCompare;
   EX.tab = EX.mine.length ? "mine" : "compare";
@@ -1543,6 +1594,7 @@ function updateExProgress() {
     const open = [...EX.extractors.keys()].filter((id) => exOutcome(id).kind === "open").length;
     $("exTabCompare").textContent = `Differenze (${open})`;
   }
+  if (EX.current) useForm(EX.current);
 }
 
 function exShowList() {
@@ -1566,13 +1618,16 @@ function exShowList() {
       const outcome = exOutcome(id);
       status = outcome.kind === "open"
         ? ["open", `${outcome.count} ${outcome.count === 1 ? "differenza" : "differenze"} da risolvere`]
-        : ["done", "Valori concordati"];
+        : ["done", words().agreed];
     } else status = myStatus(id);
     const role = EX.roles.get(id) === "verifier" ? el("span", { class: "badge", text: "Verifica" }) : null;
+    const toolId = EX.state.forms ? EX.toolOf.get(id) || Object.keys(EX.tools)[0] : "";
+    const tool = toolId ? el("span", { class: "badge", text: EX.tools[toolId]?.name || toolId }) : null;
     list.append(el("button", { class: "card ex-item", "data-record": id, onclick: () => exOpen(id) },
       el("span", { class: "badge", text: id }),
       el("strong", { text: studyLabel(record) }),
       el("span", { class: "grow muted", text: record.title || "" }),
+      tool,
       role,
       el("span", { class: `status ${status[0]}`, text: status[1] })));
   }
@@ -1614,6 +1669,7 @@ function exMove(step) {
 // --- the form
 
 function exContext(id) {
+  useForm(id);
   if (EX.editing === "consensus") {
     if (!EX.consensus.has(id)) EX.consensus.set(id, buildConsensus(id));
     const editable = EX.closed && (EX.state.conflicts !== "third_reviewer" || S.login === EX.state.arbiter);
@@ -1652,7 +1708,7 @@ function rerenderForm() {
 
 function formContent(ctx) {
   if (ctx.mode === "waiting") {
-    return [el("h2", { text: "Verifica" }), el("p", { class: "muted", text: `${ctx.extractor || "Chi estrae"} non ha ancora finito l'estrazione di questo studio: potrai verificarla quando sarà completata.` })];
+    return [el("h2", { text: "Verifica" }), el("p", { class: "muted", text: `${ctx.extractor || "Chi compila la scheda"} non ha ancora completato la scheda di questo studio: potrai verificarla quando sarà completata.` })];
   }
   const out = [];
   const names = ctx.others ? Object.keys(ctx.others) : [];
@@ -1661,17 +1717,23 @@ function formContent(ctx) {
       el("p", { class: "small muted", text: "Controlla ogni valore con il testo. Correggi dove serve: i campi corretti diventano azzurri. Poi clicca «Segna come verificata»." }));
     if (ctx.ai) out.push(aiSummaryLine(ctx));
   } else if (ctx.mode === "consensus") {
-    out.push(el("h2", { text: "Valori concordati" }),
+    out.push(el("h2", { text: words().agreed }),
       el("p", { class: "small muted", text: ctx.editable
         ? "I campi in giallo hanno valori diversi: scegli quello giusto cliccando sul valore di un revisore, oppure scrivilo. Poi clicca «Segna come definitivi»."
         : `La decisione spetta a ${EX.state.arbiter}.` }));
   } else {
-    out.push(el("h2", { text: "Scheda di estrazione" }));
+    out.push(el("h2", { text: words().title }));
   }
+  const tool = EX.tools[EX.toolOf.get(EX.current)] || (EX.state.forms ? Object.values(EX.tools)[0] : null);
+  if (tool) out.push(el("p", { class: "small muted", text: `Strumento: ${tool.name}` }));
   if (ctx.doc.status === "done") out.push(el("p", { class: "status done", text: ctx.mode === "consensus" ? "Valori definitivi" : ctx.mode === "verify" ? "Verificata" : "Completata" }));
 
   for (const item of EX.form.study || []) {
-    if (item.section) { out.push(el("h3", { text: item.section })); continue; }
+    if (item.section) {
+      out.push(el("h3", { text: item.section }));
+      if (item.help) out.push(el("p", { class: "small muted section-help", text: item.help }));
+      continue;
+    }
     ctx.doc.study[item.id] ||= { value: item.type === "multiple_choice" ? [] : "", source: "" };
     const others = ctx.others ? () => Object.fromEntries(names.map((n) => [n, ctx.others[n].study[item.id]])) : null;
     out.push(fieldBox(ctx, item, ctx.doc.study[item.id], `s:${item.id}`, others, null));
@@ -1819,7 +1881,7 @@ function fieldBox(ctx, spec, cell, fid, others, onChange) {
       compareLine.append(`${names[0]}: `, el("strong", { text: exDisplay(spec, other?.value) || "(vuoto)" }), " · corretto");
       if (other?.source && other.source !== cell.source) compareLine.append(quote(other.source));
     } else {
-      if (!differs(spec, names.map((n) => cells[n]))) return;
+      if (spec.compare === false || !differs(spec, names.map((n) => cells[n]))) return;
       box.classList.add("diff");
       compareLine.append(...names.map((n) => {
         const other = cells[n];
@@ -1845,15 +1907,64 @@ function fieldBox(ctx, spec, cell, fid, others, onChange) {
     : null;
   box.append(el("label", { text: spec.label }), spec.help ? el("div", { class: "help", text: spec.help }) : "",
     el("div", { class: "ex-input" }, input, attach), sourceLine, compareLine);
+  if (spec.proposal === "worst") box.append(proposalLine(ctx, spec, cell));
   box.decorate = decorate;
   renderSource();
   decorate();
   return box;
 }
 
+// The worst domain judgment, as an overall judgment (null until every domain is judged).
+function proposalOf(spec, doc) {
+  let worst = -1;
+  for (const domain of spec.domains || []) {
+    const mapped = (spec.maps || {})[domain]?.[doc.study[domain]?.value];
+    const index = spec.scale.findIndex((level) => level.id === mapped);
+    if (index < 0) return null;
+    worst = Math.max(worst, index);
+  }
+  return worst >= 0 ? spec.scale[worst] : null;
+}
+
+function proposalLine(ctx, spec, cell) {
+  const level = proposalOf(spec, ctx.doc);
+  const line = el("div", { class: "ex-other", "data-proposal": "" });
+  if (!level) {
+    line.append("Proposta: il giudizio peggiore tra i domini, quando li avrai giudicati tutti.");
+    return line;
+  }
+  if (cell.value === level.id) {
+    line.append("✓ È il giudizio peggiore tra i domini.");
+    return line;
+  }
+  const current = spec.scale.findIndex((l) => l.id === cell.value);
+  line.append("Proposta: ", el("strong", { text: level.label }), " (il giudizio peggiore tra i domini)");
+  if (current >= 0 && current < spec.scale.indexOf(level)) line.append(el("span", { class: "warn", text: " · ⚠ quello scelto è meno grave" }));
+  if (ctx.editable) {
+    line.append(el("button", { class: "btn small", type: "button", onclick: () => {
+      cell.value = level.id;
+      exTouch(ctx.key);
+      rerenderForm();
+    } }, "Usa la proposta"));
+  }
+  return line;
+}
+
 function fieldInput(ctx, spec, cell, fid, after) {
   const disabled = !ctx.editable;
   const changed = () => { exTouch(ctx.key); after(); };
+  if (Array.isArray(spec.scale)) {
+    // A judgment of the risk of bias: coloured buttons; a second click takes it away.
+    return el("div", { class: "judgments", role: "group", "aria-label": spec.label }, spec.scale.map((level) => el("button", {
+      type: "button", class: "judgment", disabled, "data-fid": `${fid}:${level.id}`, "aria-pressed": String(cell.value === level.id),
+      style: `--level: ${/^#[0-9a-f]{6}$/i.test(level.color || "") ? level.color : "#8c8c8c"}`,
+      onclick: () => {
+        cell.value = cell.value === level.id ? "" : level.id;
+        exTouch(ctx.key);
+        rerenderForm();  // the proposed overall judgment depends on it
+      },
+    }, el("span", { class: "dot", text: level.symbol || "" }), level.label)));
+  }
   if (spec.type === "long_text") {
     const area = el("textarea", { rows: 3, disabled, "data-fid": fid, "aria-label": spec.label });
     area.value = cell.value;
@@ -1920,7 +2031,7 @@ function attachSource(ctx, cell, done) {
 }
 
 document.addEventListener("selectionchange", () => {
-  if (!isExtraction()) return;
+  if (!isFormStage()) return;
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || !selection.anchorNode) return;
   const node = selection.anchorNode.nodeType === 1 ? selection.anchorNode : selection.anchorNode.parentElement;
@@ -2009,20 +2120,22 @@ async function start() {
 
   try {
     loading("Caricamento delle impostazioni…");
-    const [titleAbstractState, fullTextState, extractionState] = await Promise.all([
+    const [titleAbstractState, fullTextState, extractionState, robState] = await Promise.all([
       readFile("screening/title_abstract/state.json"), readFile("screening/full_text/state.json"),
-      readFile("extraction/state.json"),
+      readFile("extraction/state.json"), readFile("risk_of_bias/state.json"),
     ]);
-    S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text", extractionState && "extraction"].filter(Boolean);
+    const formStates = { extraction: extractionState, risk_of_bias: robState };
+    S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text", extractionState && "extraction",
+      robState && "risk_of_bias"].filter(Boolean);
     if (!S.stages.length) {
       showView(null);
       return showBanner("Lo screening non è ancora stato preparato. Chi coordina deve lanciare \"sysrev screening assign\" e caricare le modifiche su GitHub.", true);
     }
     const wanted = new URLSearchParams(location.search).get("stage");
     S.stage = S.stages.includes(wanted) ? wanted : S.stages[S.stages.length - 1];
-    if (isExtraction()) {
+    if (isFormStage()) {
       setupStage();
-      return startExtraction(extractionState.text);
+      return startExtraction(formStates[S.stage].text);
     }
     const stateFile = S.stage === "full_text" ? fullTextState : titleAbstractState;
     S.state = JSON.parse(stateFile.text);
@@ -2077,8 +2190,8 @@ async function start() {
 }
 
 function setupStage() {
-  $("brandName").textContent = isExtraction() ? "Estrazione dei dati" : "Screening";
-  $("stageLabel").textContent = isExtraction() ? "" : `· ${STAGES[S.stage]}`;
+  $("brandName").textContent = isFormStage() ? words().brand : "Screening";
+  $("stageLabel").textContent = isFormStage() ? "" : `· ${STAGES[S.stage]}`;
   $("stageTabs").hidden = S.stages.length < 2;
   for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
     button.setAttribute("aria-selected", String(button.dataset.stage === S.stage));
