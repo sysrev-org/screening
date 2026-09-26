@@ -11,7 +11,7 @@
   --include: #17744a; --include-bg: #e2f4ea;
   --maybe: #8a5d00; --maybe-bg: #fff2cf;
   --exclude: #b1261d; --exclude-bg: #fbe3e0;
-  --hl-include: #bfeccf; --hl-exclude: #f8cbc6; --banner: #fff2cf; --error: #fbe3e0;
+  --hl-include: #bfeccf; --hl-exclude: #f8cbc6; --banner: #fff2cf; --error: #fbe3e0; --changed-bg: #e3ecff;
 }
 @media (prefers-color-scheme: dark) {
   :root {
@@ -20,7 +20,7 @@
     --include: #6fd39c; --include-bg: #16352a;
     --maybe: #f0c24d; --maybe-bg: #3a2f12;
     --exclude: #ff8b81; --exclude-bg: #3d1c1a;
-    --hl-include: #1d5436; --hl-exclude: #6a2520; --banner: #3a2f12; --error: #3d1c1a;
+    --hl-include: #1d5436; --hl-exclude: #6a2520; --banner: #3a2f12; --error: #3d1c1a; --changed-bg: #1f2c4a;
   }
 }
 * { box-sizing: border-box; }
@@ -110,6 +110,45 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
 .fulltext th { background: var(--bg); }
 iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-radius: 8px; }
 
+/* data extraction */
+body.wide header .bar, body.wide main, body.wide .decide .bar { max-width: 1500px; }
+.ex-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.ex-text { position: sticky; top: 64px; max-height: calc(100vh - 150px); overflow-y: auto; margin: 0; }
+.ex-form { margin: 0; }
+@media (max-width: 999px) {
+  .ex-layout { grid-template-columns: 1fr; }
+  .ex-text { position: static; max-height: 65vh; }
+}
+.ex-form h2 { font-size: 19px; margin: 0 0 4px; }
+.ex-form h3 { font-size: 17px; margin: 20px 0 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+.ex-field { margin: 0 -8px 8px; padding: 6px 8px; border-radius: 8px; }
+.ex-field > label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+.ex-field .help { color: var(--muted); font-size: 13px; margin: -2px 0 4px; }
+.ex-input { display: flex; gap: 6px; align-items: flex-start; }
+.ex-input > input, .ex-input > select, .ex-input > textarea, .ex-input > .checks { flex: 1 1 auto; min-width: 0; width: 100%; }
+.ex-input textarea { resize: vertical; }
+.ex-field.diff { background: var(--maybe-bg); }
+.ex-field.changed { background: var(--changed-bg); }
+input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclude-bg); }
+.btn.icon { padding: 6px 8px; line-height: 1; }
+.ex-source, .ex-other { font-size: 13px; color: var(--muted); margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; }
+.ex-source q, .ex-other q { cursor: pointer; font-style: italic; text-decoration: underline dotted; }
+.linklike { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0 4px; }
+.chip { border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 2px 10px; cursor: pointer; font-size: 13px; }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--bg); font-weight: 600; }
+.checks { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 14px; padding: 4px 0; }
+.ex-row { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+.ex-row-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0 14px; }
+.ex-row-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.ex-item { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; cursor: pointer; padding: 12px 16px; margin-bottom: 8px; }
+.ex-item:hover { border-color: var(--accent); }
+.ex-item .grow { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.status.done { color: var(--include); } .status.draft { color: var(--maybe); } .status.todo, .status.waiting { color: var(--muted); }
+.status.open { color: var(--exclude); }
+.flash { animation: flash 2.5s ease-out; }
+@keyframes flash { from { background: var(--hl-include); } to { background: transparent; } }
+
 .login { max-width: 520px; margin: 40px auto; }
 .login label { display: block; font-weight: 600; margin: 14px 0 4px; }
 .login input[type=text], .login input[type=password] { width: 100%; }
@@ -120,7 +159,7 @@ iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-
 <body>
 <header>
   <div class="bar">
-    <span class="brand">Screening <span id="stageLabel"></span></span>
+    <span class="brand"><span id="brandName">Screening</span> <span id="stageLabel"></span></span>
     <span class="review-title" id="reviewTitle"></span>
     <span class="save" id="saveState" hidden></span>
     <span class="user" id="user"></span>
@@ -133,7 +172,7 @@ iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-
   <div id="banner" class="banner" hidden></div>
 
   <section id="loginView" class="card login" hidden>
-    <h1 style="margin-top:0">Screening</h1>
+    <h1 style="margin-top:0">Screening ed estrazione dei dati</h1>
     <p class="muted">Per entrare servono il nome del repository della review e il tuo token GitHub.
       <span id="guide">La guida per i revisori, nel repository della review, spiega come creare il token.</span></p>
     <form id="loginForm">
@@ -152,6 +191,7 @@ iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-
   <nav class="tabs" id="stageTabs" hidden aria-label="Fase dello screening">
     <button class="tab" data-stage="title_abstract" aria-selected="false">Titolo e abstract</button>
     <button class="tab" data-stage="full_text" aria-selected="false">Full text</button>
+    <button class="tab" data-stage="extraction" aria-selected="false">Estrazione dati</button>
   </nav>
 
   <nav class="tabs" id="tabs" hidden>
@@ -194,7 +234,46 @@ iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-
     </div>
     <div id="conflictList"></div>
   </section>
+  <section id="extractionView" hidden>
+    <nav class="tabs" id="exTabs" hidden>
+      <button class="tab" id="exTabMine" aria-selected="true">Le mie schede</button>
+      <button class="tab" id="exTabCompare" aria-selected="false">Differenze</button>
+    </nav>
+    <div id="exListView">
+      <div class="toolbar" id="exCompareTools" hidden>
+        <select id="exCompareFilter" aria-label="Quali studi mostrare">
+          <option value="open">Da risolvere</option>
+          <option value="resolved">Risolti</option>
+          <option value="all">Tutti</option>
+        </select>
+        <span class="position" id="exCompareCount"></span>
+      </div>
+      <details class="card help" id="exHelp">
+        <summary><strong>Come funziona</strong></summary>
+        <p>Apri uno studio: a sinistra c'è il testo, a destra la scheda da compilare. Per indicare da dove viene
+          un dato, seleziona la frase nel testo e clicca <strong>📎</strong> accanto al campo (con il PDF puoi
+          scriverlo tu, per esempio "Tabella 2"). Nei risultati va una riga per ogni combinazione di outcome,
+          momento e gruppo.</p>
+        <p>Le schede si salvano da sole su GitHub. Quando hai finito uno studio clicca
+          <strong>Segna come completata</strong>: finché l'estrazione è aperta puoi sempre riaprirla.</p>
+      </details>
+      <div id="exList"></div>
+    </div>
+    <div id="exStudy" hidden></div>
+  </section>
 </main>
+
+<div class="decide" id="exBar" hidden>
+  <div class="bar">
+    <button class="btn" id="exBack">← Elenco</button>
+    <button class="btn primary" id="exDone"></button>
+    <span class="position" id="exPosition"></span>
+    <div class="nav">
+      <button class="btn" id="exPrev" aria-label="Studio precedente">←</button>
+      <button class="btn" id="exNext" aria-label="Studio successivo">→</button>
+    </div>
+  </div>
+</div>
 
 <div class="decide" id="decideBar" hidden>
   <div class="bar">
@@ -217,7 +296,7 @@ iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-
 
 const API = "https://api.github.com";
 const RECORDS_PATH = "records/records.csv";
-const STAGES = { title_abstract: "titolo/abstract", full_text: "full text" };
+const STAGES = { title_abstract: "titolo/abstract", full_text: "full text", extraction: "estrazione dei dati" };
 const DECISION_FIELDS = {
   title_abstract: ["record_id", "decision", "note", "updated_at"],
   full_text: ["record_id", "decision", "reason", "note", "updated_at"],
@@ -504,9 +583,9 @@ async function saveNow() {
 }
 
 window.addEventListener("beforeunload", (event) => {
-  if (S.dirty.size) { saveNow(); event.preventDefault(); event.returnValue = ""; }
+  if (unsaved()) { saveEverything(); event.preventDefault(); event.returnValue = ""; }
 });
-document.addEventListener("visibilitychange", () => { if (document.hidden && S.dirty.size) saveNow(); });
+document.addEventListener("visibilitychange", () => { if (document.hidden && unsaved()) saveEverything(); });
 
 // ---------------------------------------------------------------- highlighting
 
@@ -570,7 +649,7 @@ function recordBody(record) {
     el("h2", {}, highlighted(record.title || "(senza titolo)")),
     shownAuthors ? el("div", { class: "authors", text: shownAuthors }) : null,
     source ? el("div", { class: "source", text: source }) : null,
-    isFullText() ? el("details", {}, el("summary", { class: "small", text: "Abstract" }), abstractBlock) : abstractBlock,
+    S.stage !== "title_abstract" ? el("details", {}, el("summary", { class: "small", text: "Abstract" }), abstractBlock) : abstractBlock,
     extra.length ? el("div", { class: "extra" }, extra) : null,
     el("div", { class: "links" }, recordLinks(record)),
   ];
@@ -999,12 +1078,840 @@ function loadConsensus(text, keepNewer = false) {
   }
 }
 
+// ---------------------------------------------------------------- data extraction
+
+// Same comparison rules as src/sysrev/extraction.py: keep them aligned.
+const EX = {
+  state: null, form: { study: [], results: [] }, closed: false,
+  mine: [], roles: new Map(), extractors: new Map(), verifiers: new Map(),
+  docs: new Map(), others: new Map(), consensus: new Map(), shas: new Map(), dirty: new Set(),
+  current: null, editing: "mine", tab: "mine", selection: "", formBox: null,
+};
+const YES_NO = { yes: "yes", si: "yes", "sì": "yes", true: "yes", no: "no", false: "no" };
+const NUMBER = /^[+-]?(\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?$/;
+const isExtraction = () => S.stage === "extraction";
+const studyFields = () => (EX.form.study || []).filter((item) => item.id);
+const resultFields = () => EX.form.results || [];
+const keyFields = () => resultFields().filter((f) => f.key);
+const isDouble = () => EX.state && EX.state.mode !== "verify";
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
+function exValue(raw) {
+  if (typeof raw === "boolean") return raw ? "yes" : "no";
+  if (raw == null) return "";
+  if (Array.isArray(raw)) return raw.map((v) => String(v).trim()).filter(Boolean);
+  return String(raw).trim();
+}
+function exCell(raw) {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) return { value: exValue(raw.value), source: String(raw.source || "").trim() };
+  return { value: exValue(raw), source: "" };
+}
+function hasValue(cell) { return !!cell && (Array.isArray(cell.value) ? cell.value.length > 0 : !!cell.value); }
+
+function newDoc(recordId, role) {
+  return { record_id: recordId, reviewer: role === "consensus" ? "" : S.login, role, status: "draft",
+    updated_at: "", decided_by: "", note: "", study: {}, results: [], _new: true };
+}
+function parseDoc(text, recordId, reviewer) {
+  let data;
+  try { data = JSON.parse(text); } catch { return null; }
+  if (!data || typeof data !== "object") return null;
+  const cells = (object) => Object.fromEntries(Object.entries(object && typeof object === "object" ? object : {}).map(([k, v]) => [k, exCell(v)]));
+  return {
+    record_id: recordId, reviewer, role: String(data.role || ""), status: data.status === "done" ? "done" : "draft",
+    updated_at: String(data.updated_at || ""), decided_by: String(data.decided_by || ""), note: String(data.note || ""),
+    study: cells(data.study), results: (Array.isArray(data.results) ? data.results : []).filter((r) => r && typeof r === "object").map(cells),
+  };
+}
+function serializeDoc(doc) {
+  const clean = (cells) => Object.fromEntries(Object.entries(cells)
+    .filter(([, cell]) => hasValue(cell) || cell.source)
+    .map(([k, cell]) => [k, cell.source ? { value: cell.value, source: cell.source } : { value: cell.value }]));
+  const out = { record_id: doc.record_id };
+  if (doc.reviewer) out.reviewer = doc.reviewer;
+  Object.assign(out, { role: doc.role, status: doc.status, updated_at: doc.updated_at });
+  if (doc.decided_by) out.decided_by = doc.decided_by;
+  if (doc.note) out.note = doc.note;
+  out.study = clean(doc.study);
+  out.results = doc.results.map(clean);
+  return JSON.stringify(out, null, 2) + "\n";
+}
+
+// --- comparison (same rules as sysrev)
+
+function exText(value) { return String(value ?? "").toLowerCase().split(/\s+/).filter(Boolean).join(" "); }
+function parseNumber(value) {
+  let text = String(value ?? "").trim().replace(/[  ]/g, "");
+  if (text.includes(",") && !text.includes(".")) text = text.replace(/,/g, ".");
+  return NUMBER.test(text) ? Number(text) : null;
+}
+function exNormalize(spec, value) {
+  if (spec.type === "multiple_choice") {
+    const items = Array.isArray(value) ? value : String(value ?? "").split(";");
+    const set = [...new Set(items.map(exText).filter(Boolean))].sort();
+    return set.length ? JSON.stringify(set) : "";
+  }
+  if (Array.isArray(value)) value = value.join("; ");
+  const text = exText(value);
+  if (!text) return "";
+  if (spec.type === "number" || spec.type === "integer") {
+    const number = parseNumber(value);
+    return number !== null ? `n:${number}` : text;
+  }
+  if (spec.type === "yes_no") return YES_NO[text] || text;
+  return text;
+}
+function exDisplay(spec, value) {
+  if (Array.isArray(value)) return value.join("; ");
+  const text = String(value ?? "").trim();
+  if (spec.type === "yes_no" && text) return { yes: "sì", no: "no" }[YES_NO[exText(text)]] || text;
+  return text;
+}
+function validNumber(spec, value) {
+  const number = parseNumber(value);
+  return number !== null && (spec.type !== "integer" || Number.isInteger(number));
+}
+const isEmptyRow = (row) => !Object.values(row).some(hasValue);
+const rowKey = (row) => JSON.stringify(keyFields().map((f) => exNormalize(f, row[f.id]?.value)));
+const rowLabel = (row) => keyFields().map((f) => exDisplay(f, row[f.id]?.value) || "?").join(" · ");
+
+function slotsOf(doc) {
+  // Rows are matched on their key fields, in order when a key repeats.
+  const slots = new Map(), ofRow = new Map(), seen = new Map();
+  for (const row of doc.results) {
+    if (isEmptyRow(row)) continue;
+    const key = rowKey(row);
+    const n = seen.get(key) || 0;
+    seen.set(key, n + 1);
+    slots.set(`${key}#${n}`, row);
+    ofRow.set(row, `${key}#${n}`);
+  }
+  return { slots, ofRow };
+}
+
+function alignRows(docs) {
+  const order = [], matched = new Map();
+  for (const [reviewer, doc] of Object.entries(docs)) {
+    for (const [slot, row] of slotsOf(doc).slots) {
+      if (!matched.has(slot)) { matched.set(slot, {}); order.push(slot); }
+      matched.get(slot)[reviewer] = row;
+    }
+  }
+  return order.map((slot) => ({ slot, rows: matched.get(slot) }));
+}
+
+function differs(spec, cells) {
+  const values = new Set(cells.map((cell) => exNormalize(spec, cell?.value)));
+  return values.size > 1;
+}
+
+function exCompare(docs) {
+  const names = Object.keys(docs);
+  let count = 0;
+  for (const spec of studyFields()) if (differs(spec, names.map((r) => docs[r].study[spec.id]))) count++;
+  for (const { rows } of alignRows(docs)) {
+    if (names.some((r) => !rows[r])) { count++; continue; }
+    for (const spec of resultFields()) if (!spec.key && differs(spec, names.map((r) => rows[r][spec.id]))) count++;
+  }
+  return count;
+}
+
+function docOf(reviewer, id) { return reviewer === S.login ? EX.docs.get(id) : EX.others.get(reviewer)?.get(id); }
+
+function doneDocs(id) {
+  const docs = {};
+  for (const reviewer of [...(EX.extractors.get(id) || [])].sort()) {
+    const doc = docOf(reviewer, id);
+    if (doc && !doc._new && doc.status === "done") docs[reviewer] = doc;
+  }
+  return docs;
+}
+
+function exOutcome(id) {
+  const names = EX.extractors.get(id) || [];
+  const docs = doneDocs(id);
+  if (!names.length || Object.keys(docs).length < names.length) return { kind: "pending", count: 0 };
+  if (names.length === 1) return { kind: "single", count: 0 };
+  const count = exCompare(docs);
+  if (!count) return { kind: "agreement", count };
+  const agreed = EX.consensus.get(id);
+  return { kind: agreed && !agreed._new && agreed.status === "done" ? "resolved" : "open", count };
+}
+
+function buildConsensus(id) {
+  // Values on which the reviewers agree; the others are left empty, to be chosen.
+  const docs = doneDocs(id);
+  const names = Object.keys(docs);
+  const doc = newDoc(id, "consensus");
+  const firstSource = (cells) => cells.find((c) => c?.source)?.source || "";
+  for (const spec of studyFields()) {
+    const cells = names.map((r) => docs[r].study[spec.id]);
+    if (!differs(spec, cells) && hasValue(cells[0])) doc.study[spec.id] = { value: clone(cells[0].value), source: firstSource(cells) };
+  }
+  for (const { rows } of alignRows(docs)) {
+    const present = names.filter((r) => rows[r]);
+    const row = {};
+    for (const spec of resultFields()) {
+      const cells = present.map((r) => rows[r][spec.id]);
+      if ((spec.key || !differs(spec, cells)) && hasValue(cells[0])) row[spec.id] = { value: clone(cells[0].value), source: firstSource(cells) };
+    }
+    doc.results.push(row);
+  }
+  return doc;
+}
+
+// --- files
+
+const exSaving = { timer: null, busy: false, again: false, retry: null };
+const exBackupKey = () => `sysrev:extraction:${S.repo}:${S.login}`;
+
+function exPath(key) {
+  const [kind, id] = key.split(":");
+  return kind === "consensus" ? `extraction/consensus/${id}.json` : `extraction/data/${S.login}/${id}.json`;
+}
+function exDocByKey(key) {
+  const [kind, id] = key.split(":");
+  return kind === "consensus" ? EX.consensus.get(id) : EX.docs.get(id);
+}
+
+function exPersist() {
+  const pending = Object.fromEntries([...EX.dirty].map((key) => [key, exDocByKey(key)]));
+  try {
+    if (EX.dirty.size) localStorage.setItem(exBackupKey(), JSON.stringify(pending));
+    else localStorage.removeItem(exBackupKey());
+  } catch { /* storage unavailable */ }
+}
+
+function exRefreshSaveState() {
+  if (EX.dirty.size) setSaveState("pending", `${EX.dirty.size} ${EX.dirty.size === 1 ? "scheda" : "schede"} da salvare…`);
+  else setSaveState("saved", "Tutto salvato");
+}
+
+function exTouch(key) {
+  const doc = exDocByKey(key);
+  delete doc._new;
+  doc.updated_at = nowIso();
+  if (key.startsWith("consensus:")) doc.decided_by = S.login;
+  EX.dirty.add(key);
+  exPersist();
+  exRefreshSaveState();
+  clearTimeout(exSaving.timer);
+  exSaving.timer = setTimeout(exSaveNow, 2500);
+}
+
+async function exSaveNow() {
+  clearTimeout(exSaving.timer);
+  clearTimeout(exSaving.retry);
+  if (!EX.dirty.size) return;
+  if (exSaving.busy) { exSaving.again = true; return; }
+  exSaving.busy = true;
+  setSaveState("saving", "Salvataggio…");
+  try {
+    for (const key of [...EX.dirty]) {
+      const doc = exDocByKey(key);
+      const stamp = doc.updated_at;
+      const path = exPath(key);
+      const what = key.startsWith("consensus:") ? `valori concordati su ${doc.record_id}` : doc.record_id;
+      let replaced = false;
+      for (let attempt = 0; ; attempt++) {
+        try {
+          EX.shas.set(path, await writeFile(path, serializeDoc(doc), EX.shas.get(path), `Estrazione: ${what} (${S.login})`));
+          break;
+        } catch (error) {
+          // Saved meanwhile from another tab or computer: the newest version wins.
+          if ((error.status === 409 || error.status === 422) && attempt < 3) {
+            const remote = await readFile(path);
+            EX.shas.set(path, remote ? remote.sha : null);
+            const remoteDoc = remote && parseDoc(remote.text, doc.record_id, doc.reviewer);
+            if (remoteDoc && remoteDoc.updated_at > doc.updated_at) {
+              (key.startsWith("consensus:") ? EX.consensus : EX.docs).set(doc.record_id, remoteDoc);
+              replaced = true;
+              break;
+            }
+            continue;
+          }
+          throw error;
+        }
+      }
+      // Still dirty only if it changed while it was being saved.
+      if (replaced || exDocByKey(key).updated_at === stamp) EX.dirty.delete(key);
+      if (replaced && EX.current === doc.record_id) rerenderForm();
+    }
+    exPersist();
+    exRefreshSaveState();
+  } catch (error) {
+    setSaveState("error", "Non salvato");
+    showBanner(`Salvataggio non riuscito: ${explain(error)} Le schede restano in questo browser e verranno salvate appena possibile.`, true);
+    exSaving.retry = setTimeout(exSaveNow, 30000);
+  } finally {
+    exSaving.busy = false;
+    if (exSaving.again) { exSaving.again = false; if (EX.dirty.size) exSaveNow(); }
+  }
+}
+
+async function inBatches(items, task, size = 6) {
+  for (let i = 0; i < items.length; i += size) await Promise.all(items.slice(i, i + size).map(task));
+}
+
+async function loadDocs(reviewer, ids, target, keepSha) {
+  const present = new Set((await listDir(`extraction/data/${reviewer}`)).map((f) => f.name));
+  await inBatches(ids.filter((id) => present.has(`${id}.json`)), async (id) => {
+    const path = `extraction/data/${reviewer}/${id}.json`;
+    const file = await readFile(path);
+    const doc = file && parseDoc(file.text, id, reviewer);
+    if (!doc) return;
+    target.set(id, doc);
+    if (keepSha) EX.shas.set(path, file.sha);
+  });
+}
+
+// --- loading
+
+async function startExtraction(stateText) {
+  EX.state = JSON.parse(stateText);
+  EX.form = EX.state.form || { study: [], results: [] };
+  EX.closed = EX.state.status === "closed";
+  document.body.classList.add("wide");
+  $("reviewTitle").textContent = EX.state.title || S.repo;
+  document.title = `Estrazione dati · ${EX.state.title || S.repo}`;
+  highlighter = buildHighlighter(EX.state.highlight);
+  try {
+    loading("Caricamento degli studi…");
+    const [recordsFile, assignmentsFile, mdList, pdfList] = await Promise.all([
+      readFile(RECORDS_PATH), readFile("extraction/assignments.csv"), listDir("fulltext/md"), listDir("fulltext/pdf"),
+    ]);
+    for (const record of parseCSV(recordsFile ? recordsFile.text : "")) S.records.set(record.record_id, record);
+    S.mdFiles = new Set(mdList.filter((f) => f.name.endsWith(".md")).map((f) => f.name.slice(0, -3)));
+    S.pdfFiles = new Set(pdfList.filter((f) => f.name.endsWith(".pdf")).map((f) => f.name.slice(0, -4)));
+    for (const row of parseCSV(assignmentsFile ? assignmentsFile.text : "")) {
+      const reviewer = (row.reviewer || "").trim().toLowerCase();
+      const role = row.role === "verifier" ? "verifier" : "extractor";
+      if (!row.record_id || !reviewer) continue;
+      const map = role === "verifier" ? EX.verifiers : EX.extractors;
+      if (!map.has(row.record_id)) map.set(row.record_id, []);
+      map.get(row.record_id).push(reviewer);
+      if (reviewer === S.login && !EX.roles.has(row.record_id)) EX.roles.set(row.record_id, role);
+      else if (reviewer === S.login && role === "extractor") EX.roles.set(row.record_id, role);
+    }
+    EX.mine = [...EX.roles.keys()].sort((a, b) => num(a) - num(b));
+
+    loading("Caricamento delle schede…");
+    await loadDocs(S.login, EX.mine, EX.docs, true);
+    const toRead = new Map();  // reviewer -> studies whose data this page may show
+    const want = (reviewer, id) => {
+      if (reviewer === S.login) return;
+      if (!toRead.has(reviewer)) toRead.set(reviewer, []);
+      toRead.get(reviewer).push(id);
+    };
+    for (const [id, role] of EX.roles) {
+      if (role === "verifier") for (const reviewer of EX.extractors.get(id) || []) want(reviewer, id);
+    }
+    if (EX.closed && isDouble()) {
+      // Closed: everyone's data can be compared.
+      for (const [id, reviewers] of EX.extractors) for (const reviewer of reviewers) want(reviewer, id);
+      const consensus = (await listDir("extraction/consensus")).filter((f) => f.name.endsWith(".json"));
+      await inBatches(consensus, async (f) => {
+        const file = await readFile(f.path);
+        const id = f.name.slice(0, -5);
+        const doc = file && parseDoc(file.text, id, "");
+        if (doc) { EX.consensus.set(id, doc); EX.shas.set(f.path, file.sha); }
+      });
+    }
+    for (const [reviewer, ids] of toRead) {
+      if (!EX.others.has(reviewer)) EX.others.set(reviewer, new Map());
+      await loadDocs(reviewer, [...new Set(ids)], EX.others.get(reviewer), false);
+    }
+    exRestore();
+  } catch (error) {
+    showView(null);
+    return showBanner(`Caricamento non riuscito: ${explain(error)}`, true);
+  }
+
+  const canCompare = EX.closed && isDouble();
+  if (!EX.mine.length && !canCompare) {
+    showView(null);
+    return showBanner(`Non hai studi assegnati nell'estrazione dei dati. Chiedi a chi coordina di controllare che "${S.login}" sia tra i revisori in review.yml e di lanciare "sysrev extraction assign".`, true);
+  }
+  if (EX.closed) {
+    showBanner(canCompare
+      ? "L'estrazione è chiusa: le schede non si possono più cambiare. Nella scheda Differenze trovi gli studi con valori diversi tra i revisori."
+      : "L'estrazione è chiusa: le schede non si possono più cambiare.");
+  } else showBanner("");
+  $("exTabs").hidden = !canCompare;
+  EX.tab = EX.mine.length ? "mine" : "compare";
+  showView("extractionView");
+  exShowList();
+}
+
+function exRestore() {
+  let pending = {};
+  try { pending = JSON.parse(localStorage.getItem(exBackupKey()) || "{}"); } catch { pending = {}; }
+  for (const [key, doc] of Object.entries(pending)) {
+    const [kind, id] = key.split(":");
+    const target = kind === "consensus" ? EX.consensus : EX.docs;
+    const current = target.get(id);
+    if (doc && doc.updated_at && (!current || doc.updated_at > (current.updated_at || ""))) {
+      target.set(id, doc);
+      EX.dirty.add(key);
+    }
+  }
+  if (EX.dirty.size) exSaveNow(); else exRefreshSaveState();
+}
+
+// --- list of studies
+
+function studyLabel(record) {
+  const first = (record.authors || "").split(";")[0].trim();
+  const surname = first.includes(",") ? first.split(",")[0].trim() : first.split(" ")[0];
+  return [surname, record.year].filter(Boolean).join(" ") || record.record_id;
+}
+
+function myStatus(id) {
+  const role = EX.roles.get(id);
+  const doc = EX.docs.get(id);
+  if (role === "verifier") {
+    const waiting = (EX.extractors.get(id) || []).filter((r) => docOf(r, id)?.status !== "done");
+    if (waiting.length) return ["waiting", `In attesa di ${waiting.join(", ")}`];
+    if (!doc || doc._new) return ["todo", "Da verificare"];
+    return doc.status === "done" ? ["done", "Verificata"] : ["draft", "In verifica"];
+  }
+  if (!doc || doc._new) return ["todo", "Da fare"];
+  return doc.status === "done" ? ["done", "Completata"] : ["draft", "In corso"];
+}
+
+function compareIds() {
+  const filter = $("exCompareFilter").value;
+  return [...EX.extractors.keys()].sort((a, b) => num(a) - num(b)).filter((id) => {
+    const kind = exOutcome(id).kind;
+    return (kind === "open" || kind === "resolved") && (filter === "all" || filter === kind);
+  });
+}
+
+function currentList() { return EX.tab === "compare" ? compareIds() : EX.mine; }
+
+function updateExProgress() {
+  const done = EX.mine.filter((id) => myStatus(id)[0] === "done").length;
+  $("progressBar").style.width = EX.mine.length ? `${(100 * done) / EX.mine.length}%` : "0";
+  $("user").textContent = `${S.login} · ${done}/${EX.mine.length}`;
+  if (EX.closed && isDouble()) {
+    const open = [...EX.extractors.keys()].filter((id) => exOutcome(id).kind === "open").length;
+    $("exTabCompare").textContent = `Differenze (${open})`;
+  }
+}
+
+function exShowList() {
+  EX.current = null;
+  S.currentId = null;
+  $("exStudy").hidden = true;
+  $("exListView").hidden = false;
+  $("exBar").hidden = true;
+  $("exTabMine").setAttribute("aria-selected", String(EX.tab === "mine"));
+  $("exTabCompare").setAttribute("aria-selected", String(EX.tab === "compare"));
+  $("exCompareTools").hidden = EX.tab !== "compare";
+  $("exHelp").hidden = EX.tab === "compare" || EX.closed;
+  updateExProgress();
+  const list = $("exList");
+  list.replaceChildren();
+  const ids = currentList();
+  for (const id of ids) {
+    const record = S.records.get(id) || { record_id: id };
+    let status;
+    if (EX.tab === "compare") {
+      const outcome = exOutcome(id);
+      status = outcome.kind === "open"
+        ? ["open", `${outcome.count} ${outcome.count === 1 ? "differenza" : "differenze"} da risolvere`]
+        : ["done", "Valori concordati"];
+    } else status = myStatus(id);
+    const role = EX.roles.get(id) === "verifier" ? el("span", { class: "badge", text: "Verifica" }) : null;
+    list.append(el("button", { class: "card ex-item", "data-record": id, onclick: () => exOpen(id) },
+      el("span", { class: "badge", text: id }),
+      el("strong", { text: studyLabel(record) }),
+      el("span", { class: "grow muted", text: record.title || "" }),
+      role,
+      el("span", { class: `status ${status[0]}`, text: status[1] })));
+  }
+  if (EX.tab === "compare") {
+    const all = [...EX.extractors.keys()].map((id) => exOutcome(id).kind);
+    $("exCompareCount").textContent = `${all.filter((k) => k === "open").length} da risolvere · ${all.filter((k) => k === "resolved").length} risolti`;
+  }
+  if (!ids.length) list.append(el("div", { class: "card muted", text: EX.tab === "compare" ? "Nessuno studio da mostrare con questo filtro." : "Nessuno studio assegnato." }));
+}
+
+function exOpen(id) {
+  EX.current = id;
+  EX.editing = EX.tab === "compare" ? "consensus" : "mine";
+  EX.selection = "";
+  S.currentId = id;
+  $("exListView").hidden = true;
+  $("exStudy").hidden = false;
+  const record = S.records.get(id) || { record_id: id, title: id };
+  EX.formBox = el("div", { class: "ex-form card" });
+  $("exStudy").replaceChildren(el("div", { class: "ex-layout" },
+    el("div", { class: "ex-text card record" }, ...recordBody(record).filter(Boolean), ...fullTextPanel(id)),
+    EX.formBox));
+  rerenderForm();
+  window.scrollTo(0, 0);
+}
+
+function exMove(step) {
+  const ids = currentList();
+  const index = ids.indexOf(EX.current);
+  const target = ids[index + step];
+  if (target) exOpen(target);
+}
+
+// --- the form
+
+function exContext(id) {
+  if (EX.editing === "consensus") {
+    if (!EX.consensus.has(id)) EX.consensus.set(id, buildConsensus(id));
+    const editable = EX.closed && (EX.state.conflicts !== "third_reviewer" || S.login === EX.state.arbiter);
+    return { mode: "consensus", key: `consensus:${id}`, doc: EX.consensus.get(id), others: doneDocs(id), editable };
+  }
+  const role = EX.roles.get(id);
+  if (role === "verifier") {
+    const extractor = (EX.extractors.get(id) || [])[0];
+    const source = extractor && docOf(extractor, id);
+    if (!source || source.status !== "done") return { mode: "waiting", extractor };
+    if (!EX.docs.has(id)) {
+      // The verifier starts from a copy of the extracted data.
+      const doc = newDoc(id, "verifier");
+      doc.study = clone(source.study);
+      doc.results = clone(source.results);
+      EX.docs.set(id, doc);
+    }
+    return { mode: "verify", key: `mine:${id}`, doc: EX.docs.get(id), others: { [extractor]: source }, editable: !EX.closed };
+  }
+  if (!EX.docs.has(id)) EX.docs.set(id, newDoc(id, "extractor"));
+  return { mode: "extract", key: `mine:${id}`, doc: EX.docs.get(id), others: null, editable: !EX.closed };
+}
+
+function rerenderForm() {
+  if (!EX.formBox || !EX.current) return;
+  const focused = document.activeElement?.dataset?.fid;
+  const y = window.scrollY;
+  EX.formBox.replaceChildren(...formContent(exContext(EX.current)));
+  if (focused) document.querySelector(`[data-fid="${CSS.escape(focused)}"]`)?.focus({ preventScroll: true });
+  window.scrollTo(0, y);
+  updateExBar();
+  updateExProgress();
+}
+
+function formContent(ctx) {
+  if (ctx.mode === "waiting") {
+    return [el("h2", { text: "Verifica" }), el("p", { class: "muted", text: `${ctx.extractor || "Chi estrae"} non ha ancora finito l'estrazione di questo studio: potrai verificarla quando sarà completata.` })];
+  }
+  const out = [];
+  const names = ctx.others ? Object.keys(ctx.others) : [];
+  if (ctx.mode === "verify") {
+    out.push(el("h2", { text: `Verifica dei dati estratti da ${names[0]}` }),
+      el("p", { class: "small muted", text: "Controlla ogni valore con il testo. Correggi dove serve: i campi corretti diventano azzurri. Poi clicca «Segna come verificata»." }));
+  } else if (ctx.mode === "consensus") {
+    out.push(el("h2", { text: "Valori concordati" }),
+      el("p", { class: "small muted", text: ctx.editable
+        ? "I campi in giallo hanno valori diversi: scegli quello giusto cliccando sul valore di un revisore, oppure scrivilo. Poi clicca «Segna come definitivi»."
+        : `La decisione spetta a ${EX.state.arbiter}.` }));
+  } else {
+    out.push(el("h2", { text: "Scheda di estrazione" }));
+  }
+  if (ctx.doc.status === "done") out.push(el("p", { class: "status done", text: ctx.mode === "consensus" ? "Valori definitivi" : ctx.mode === "verify" ? "Verificata" : "Completata" }));
+
+  for (const item of EX.form.study || []) {
+    if (item.section) { out.push(el("h3", { text: item.section })); continue; }
+    ctx.doc.study[item.id] ||= { value: item.type === "multiple_choice" ? [] : "", source: "" };
+    const others = ctx.others ? () => Object.fromEntries(names.map((n) => [n, ctx.others[n].study[item.id]])) : null;
+    out.push(fieldBox(ctx, item, ctx.doc.study[item.id], `s:${item.id}`, others, null));
+  }
+  if (resultFields().length) out.push(...resultsSection(ctx, names));
+
+  const note = el("textarea", { rows: 3, disabled: !ctx.editable, "data-fid": "note", placeholder: "Note sullo studio (facoltative)" });
+  note.value = ctx.doc.note || "";
+  note.addEventListener("input", () => { ctx.doc.note = note.value; exTouch(ctx.key); });
+  out.push(el("h3", { text: "Note" }), note);
+  return out;
+}
+
+function resultsSection(ctx, names) {
+  const out = [el("h3", { text: "Risultati" })];
+  const theirs = Object.fromEntries(names.map((n) => [n, slotsOf(ctx.others[n]).slots]));
+  const missing = el("div");
+  const refreshMissing = () => {
+    // Rows of the other reviewers that are not here (removed, or written with a different key).
+    if (!ctx.others) return;
+    const here = new Set(slotsOf(ctx.doc).ofRow.values());
+    missing.replaceChildren(...names.flatMap((n) => [...theirs[n]].filter(([slot]) => !here.has(slot)).map(([, row]) =>
+      el("div", { class: "ex-other" }, `Riga di ${n} che qui non c'è: `, el("strong", { text: rowLabel(row) }),
+        ctx.editable ? el("button", { class: "btn small", type: "button", onclick: () => {
+          ctx.doc.results.push(clone(row));
+          exTouch(ctx.key);
+          rerenderForm();
+        } }, "Aggiungila") : null))));
+  };
+  ctx.doc.results.forEach((row, index) => out.push(rowBox(ctx, row, index, names, theirs, refreshMissing)));
+  if (!ctx.doc.results.length) out.push(el("p", { class: "small muted", text: "Nessuna riga." }));
+  refreshMissing();
+  out.push(missing);
+  if (ctx.editable) {
+    out.push(el("button", { class: "btn", type: "button", onclick: () => {
+      ctx.doc.results.push({});
+      exTouch(ctx.key);
+      rerenderForm();
+    } }, "+ Aggiungi una riga"));
+  }
+  return out;
+}
+
+function rowBox(ctx, row, index, names, theirs, refreshMissing) {
+  const note = el("p", { class: "small muted" });
+  const otherRows = () => {
+    const slot = slotsOf(ctx.doc).ofRow.get(row);
+    return Object.fromEntries(names.map((n) => [n, slot ? theirs[n].get(slot) : undefined]));
+  };
+  const boxes = [];
+  const setNote = () => {
+    const rows = otherRows();
+    const present = names.filter((n) => rows[n]);
+    let text = "";
+    if (ctx.others && !isEmptyRow(row) && present.length < names.length) {
+      text = ctx.mode === "verify" ? `Riga aggiunta: non c'è nei dati di ${names[0]}.`
+        : `Riga presente solo per ${present.join(", ") || "nessuno dei revisori"}.`;
+    }
+    note.textContent = text;
+    note.hidden = !text;
+  };
+  const refresh = () => {
+    setNote();
+    for (const box of boxes) box.decorate();
+    refreshMissing();
+  };
+  for (const spec of resultFields()) {
+    row[spec.id] ||= { value: spec.type === "multiple_choice" ? [] : "", source: "" };
+    const others = ctx.others ? () => {
+      const cells = Object.fromEntries(Object.entries(otherRows()).filter(([, r]) => r).map(([n, r]) => [n, r[spec.id]]));
+      return Object.keys(cells).length ? cells : null;
+    } : null;
+    boxes.push(fieldBox(ctx, spec, row[spec.id], `r${index}:${spec.id}`, others, ctx.others ? refresh : null));
+  }
+  const actions = ctx.editable ? el("div", { class: "ex-row-actions" },
+    el("button", { class: "btn small", type: "button", onclick: () => {
+      const copy = Object.fromEntries(Object.entries(row).map(([k, cell]) => [k, { value: clone(cell.value), source: "" }]));
+      ctx.doc.results.splice(index + 1, 0, copy);
+      exTouch(ctx.key);
+      rerenderForm();
+    } }, "Duplica"),
+    el("button", { class: "btn small", type: "button", onclick: () => {
+      if (!isEmptyRow(row) && !confirm("Togliere questa riga?")) return;
+      ctx.doc.results.splice(index, 1);
+      exTouch(ctx.key);
+      rerenderForm();
+    } }, "Togli la riga")) : null;
+  setNote();
+  return el("div", { class: "ex-row" }, note, el("div", { class: "ex-row-grid" }, boxes), actions);
+}
+
+// A field of the form. Values are updated in place while typing (no re-rendering, so the
+// cursor stays where it is); ``others`` gives the values of the other reviewers, if any.
+function fieldBox(ctx, spec, cell, fid, others, onChange) {
+  const box = el("div", { class: "ex-field" });
+  const sourceLine = el("div", { class: "ex-source" });
+  const compareLine = el("div", { class: "ex-other" });
+  const renderSource = () => {
+    sourceLine.hidden = !cell.source;
+    sourceLine.replaceChildren(...(cell.source ? ["Fonte: ", quote(cell.source)] : []));
+    if (cell.source && ctx.editable) {
+      sourceLine.append(el("button", { class: "linklike", type: "button", title: "Togli la fonte", onclick: () => {
+        cell.source = "";
+        exTouch(ctx.key);
+        renderSource();
+      } }, "×"));
+    }
+  };
+  const decorate = () => {
+    box.classList.remove("changed", "diff");
+    compareLine.replaceChildren();
+    compareLine.hidden = true;
+    const cells = others && others();
+    if (!cells) return;
+    const names = Object.keys(cells);
+    const mine = exNormalize(spec, cell.value);
+    if (ctx.mode === "verify") {
+      const other = cells[names[0]];
+      if (exNormalize(spec, other?.value) === mine) return;
+      box.classList.add("changed");
+      compareLine.append(`${names[0]}: `, el("strong", { text: exDisplay(spec, other?.value) || "(vuoto)" }), " · corretto");
+      if (other?.source && other.source !== cell.source) compareLine.append(quote(other.source));
+    } else {
+      if (!differs(spec, names.map((n) => cells[n]))) return;
+      box.classList.add("diff");
+      compareLine.append(...names.map((n) => {
+        const other = cells[n];
+        return el("button", {
+          class: "chip", type: "button", disabled: !ctx.editable,
+          "aria-pressed": String(!!mine && exNormalize(spec, other?.value) === mine),
+          title: other?.source ? `Fonte: ${other.source}` : null,
+          onclick: () => {
+            cell.value = clone(other?.value ?? (spec.type === "multiple_choice" ? [] : ""));
+            cell.source = other?.source || "";
+            exTouch(ctx.key);
+            rerenderForm();
+          },
+        }, `${n}: ${exDisplay(spec, other?.value) || "(vuoto)"}`);
+      }));
+    }
+    compareLine.hidden = false;
+  };
+  const input = fieldInput(ctx, spec, cell, fid, () => { decorate(); if (onChange) onChange(); });
+  const attach = ctx.editable
+    ? el("button", { class: "btn icon", type: "button", title: "Da dove viene il dato: collega la frase selezionata nel testo",
+        onclick: () => attachSource(ctx, cell, renderSource) }, "📎")
+    : null;
+  box.append(el("label", { text: spec.label }), spec.help ? el("div", { class: "help", text: spec.help }) : "",
+    el("div", { class: "ex-input" }, input, attach), sourceLine, compareLine);
+  box.decorate = decorate;
+  renderSource();
+  decorate();
+  return box;
+}
+
+function fieldInput(ctx, spec, cell, fid, after) {
+  const disabled = !ctx.editable;
+  const changed = () => { exTouch(ctx.key); after(); };
+  if (spec.type === "long_text") {
+    const area = el("textarea", { rows: 3, disabled, "data-fid": fid, "aria-label": spec.label });
+    area.value = cell.value;
+    area.addEventListener("input", () => { cell.value = area.value; changed(); });
+    return area;
+  }
+  if (spec.type === "choice" || spec.type === "yes_no") {
+    const options = spec.type === "yes_no" ? [["yes", "Sì"], ["no", "No"]] : (spec.options || []).map((o) => [o, o]);
+    const current = String(cell.value || "");
+    const known = options.find(([value]) => exNormalize(spec, value) === exNormalize(spec, current));
+    const select = el("select", { disabled, "data-fid": fid, "aria-label": spec.label },
+      el("option", { value: "", text: "—" }),
+      options.map(([value, label]) => el("option", { value, text: label })),
+      current && !known ? el("option", { value: current, text: `${current} (non in elenco)` }) : null);
+    select.value = known ? known[0] : current;
+    select.addEventListener("change", () => { cell.value = select.value; changed(); });
+    return select;
+  }
+  if (spec.type === "multiple_choice") {
+    const values = Array.isArray(cell.value) ? cell.value : String(cell.value || "").split(";").map((v) => v.trim()).filter(Boolean);
+    cell.value = values;
+    const extra = values.filter((v) => !(spec.options || []).some((o) => exText(o) === exText(v)));
+    return el("div", { class: "checks" }, [...(spec.options || []), ...extra].map((option) => {
+      const box = el("input", { type: "checkbox", disabled, "data-fid": `${fid}:${option}` });
+      box.checked = values.some((v) => exText(v) === exText(option));
+      box.addEventListener("change", () => {
+        const others = cell.value.filter((v) => exText(v) !== exText(option));
+        cell.value = box.checked ? [...others, option] : others;
+        changed();
+      });
+      return el("label", {}, box, " ", option);
+    }));
+  }
+  const numeric = spec.type === "number" || spec.type === "integer";
+  const input = el("input", { type: "text", disabled, "data-fid": fid, "aria-label": spec.label, inputmode: numeric ? "decimal" : null });
+  input.value = cell.value;
+  const check = () => {
+    const bad = numeric && !!input.value.trim() && !validNumber(spec, input.value);
+    input.classList.toggle("invalid", bad);
+    input.title = bad ? (spec.type === "integer" ? "Serve un numero intero" : "Serve un numero") : "";
+  };
+  check();
+  input.addEventListener("input", () => { cell.value = input.value; check(); changed(); });
+  return input;
+}
+
+// --- sources
+
+function quote(text) {
+  return el("q", { title: "Mostra nel testo", onclick: () => findInText(text) }, text.length > 240 ? `${text.slice(0, 240)}…` : text);
+}
+
+function attachSource(ctx, cell, done) {
+  let text = EX.selection;
+  EX.selection = "";
+  if (text) window.getSelection().removeAllRanges();  // used: a new clip needs a new selection
+  else {
+    text = prompt("Per collegare una frase: selezionala nel testo a sinistra e poi clicca 📎.\n\nOppure scrivi qui da dove viene il dato (per esempio: Tabella 2, pagina 5):", cell.source || "");
+    if (text === null) return;
+  }
+  cell.source = text.replace(/\s+/g, " ").trim().slice(0, 1000);
+  exTouch(ctx.key);
+  done();
+}
+
+document.addEventListener("selectionchange", () => {
+  if (!isExtraction()) return;
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || !selection.anchorNode) return;
+  const node = selection.anchorNode.nodeType === 1 ? selection.anchorNode : selection.anchorNode.parentElement;
+  if (node && node.closest(".fulltext")) EX.selection = selection.toString().replace(/\s+/g, " ").trim().slice(0, 1000);
+});
+
+function findInText(text) {
+  const container = document.querySelector("#exStudy .fulltext");
+  const wanted = text.replace(/\s+/g, " ").trim().toLowerCase();
+  if (!container || !wanted) return;
+  const blocks = [...container.querySelectorAll("p, li, td, th, h2, h3, h4, h5, h6, pre, blockquote")];
+  for (const probe of [wanted, wanted.slice(0, 60), wanted.slice(0, 25)]) {
+    const block = blocks.find((b) => b.textContent.replace(/\s+/g, " ").toLowerCase().includes(probe));
+    if (block) {
+      block.scrollIntoView({ block: "center", behavior: "smooth" });
+      block.classList.remove("flash");
+      void block.offsetWidth;
+      block.classList.add("flash");
+      return;
+    }
+  }
+  showBanner(container.querySelector("iframe") ? "Per vedere la frase passa alla scheda Testo." : "Frase non trovata nel testo.");
+}
+
+// --- bottom bar
+
+function updateExBar() {
+  const ids = currentList();
+  const index = ids.indexOf(EX.current);
+  $("exBar").hidden = false;
+  $("exPosition").textContent = index >= 0 ? `Studio ${index + 1} di ${ids.length}` : "";
+  $("exPrev").disabled = index <= 0;
+  $("exNext").disabled = index < 0 || index >= ids.length - 1;
+  const ctx = exContext(EX.current);
+  const button = $("exDone");
+  button.hidden = !ctx.doc || !ctx.editable;
+  if (button.hidden) return;
+  const done = ctx.doc.status === "done";
+  const labels = { extract: ["Segna come completata", "Completata ✓ · riapri"], verify: ["Segna come verificata", "Verificata ✓ · riapri"],
+    consensus: ["Segna come definitivi", "Definitivi ✓ · riapri"] }[ctx.mode];
+  button.textContent = labels[done ? 1 : 0];
+  button.className = done ? "btn" : "btn primary";
+}
+
+function toggleDone() {
+  const ctx = exContext(EX.current);
+  if (!ctx.doc || !ctx.editable) return;
+  if (ctx.doc.status !== "done") {
+    const cells = [...studyFields().map((f) => [f, ctx.doc.study[f.id]]),
+      ...ctx.doc.results.flatMap((row) => resultFields().map((f) => [f, row[f.id]]))];
+    const bad = cells.filter(([f, cell]) => (f.type === "number" || f.type === "integer") && hasValue(cell) && !validNumber(f, cell.value)).length;
+    if (bad && !confirm(`${bad} ${bad === 1 ? "valore non è un numero valido" : "valori non sono numeri validi"} (in rosso). Vuoi segnare la scheda come completata lo stesso?`)) return;
+    ctx.doc.status = "done";
+  } else ctx.doc.status = "draft";
+  exTouch(ctx.key);
+  exSaveNow();
+  rerenderForm();
+}
+
 // ---------------------------------------------------------------- loading
 
 function showView(name) {
-  for (const view of ["loginView", "loadingView", "screenView", "conflictsView"]) $(view).hidden = view !== name;
+  for (const view of ["loginView", "loadingView", "screenView", "conflictsView", "extractionView"]) $(view).hidden = view !== name;
   if (name !== "screenView") $("decideBar").hidden = true;
+  if (name !== "extractionView") $("exBar").hidden = true;
 }
+
+const unsaved = () => S.dirty.size + EX.dirty.size;
+function saveEverything() { if (S.dirty.size) saveNow(); if (EX.dirty.size) exSaveNow(); }
 
 function loading(text) { $("loadingText").textContent = text; showView("loadingView"); }
 
@@ -1024,16 +1931,21 @@ async function start() {
 
   try {
     loading("Caricamento delle impostazioni…");
-    const [titleAbstractState, fullTextState] = await Promise.all([
+    const [titleAbstractState, fullTextState, extractionState] = await Promise.all([
       readFile("screening/title_abstract/state.json"), readFile("screening/full_text/state.json"),
+      readFile("extraction/state.json"),
     ]);
-    S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text"].filter(Boolean);
+    S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text", extractionState && "extraction"].filter(Boolean);
     if (!S.stages.length) {
       showView(null);
       return showBanner("Lo screening non è ancora stato preparato. Chi coordina deve lanciare \"sysrev screening assign\" e caricare le modifiche su GitHub.", true);
     }
     const wanted = new URLSearchParams(location.search).get("stage");
     S.stage = S.stages.includes(wanted) ? wanted : S.stages[S.stages.length - 1];
+    if (isExtraction()) {
+      setupStage();
+      return startExtraction(extractionState.text);
+    }
     const stateFile = S.stage === "full_text" ? fullTextState : titleAbstractState;
     S.state = JSON.parse(stateFile.text);
     setupStage();
@@ -1087,7 +1999,8 @@ async function start() {
 }
 
 function setupStage() {
-  $("stageLabel").textContent = `· ${STAGES[S.stage]}`;
+  $("brandName").textContent = isExtraction() ? "Estrazione dei dati" : "Screening";
+  $("stageLabel").textContent = isExtraction() ? "" : `· ${STAGES[S.stage]}`;
   $("stageTabs").hidden = S.stages.length < 2;
   for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
     button.setAttribute("aria-selected", String(button.dataset.stage === S.stage));
@@ -1181,7 +2094,7 @@ $("loginForm").addEventListener("submit", (event) => {
 $("repoInput").addEventListener("input", updateGuideLink);
 
 $("logout").addEventListener("click", () => {
-  if (S.dirty.size && !confirm("Ci sono decisioni non ancora salvate su GitHub. Uscire comunque? Resteranno in questo browser.")) return;
+  if (unsaved() && !confirm("Ci sono modifiche non ancora salvate su GitHub. Uscire comunque? Resteranno in questo browser.")) return;
   storageRemove("sysrev:token");
   location.reload();
 });
@@ -1197,6 +2110,7 @@ for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
   button.addEventListener("click", async () => {
     if (button.dataset.stage === S.stage) return;
     if (S.dirty.size) await saveNow();
+    if (EX.dirty.size) await exSaveNow();
     const params = new URLSearchParams(location.search);
     params.set("stage", button.dataset.stage);
     location.search = params.toString();
@@ -1208,6 +2122,13 @@ $("helpButton").addEventListener("click", () => { $("help").hidden = !$("help").
 $("tabScreen").addEventListener("click", () => selectTab("screen"));
 $("tabConflicts").addEventListener("click", () => selectTab("conflicts"));
 $("conflictFilter").addEventListener("change", renderConflicts);
+$("exBack").addEventListener("click", exShowList);
+$("exPrev").addEventListener("click", () => exMove(-1));
+$("exNext").addEventListener("click", () => exMove(1));
+$("exDone").addEventListener("click", toggleDone);
+$("exTabMine").addEventListener("click", () => { EX.tab = "mine"; exShowList(); });
+$("exTabCompare").addEventListener("click", () => { EX.tab = "compare"; exShowList(); });
+$("exCompareFilter").addEventListener("change", exShowList);
 $("onlyMine").addEventListener("change", renderConflicts);
 
 document.addEventListener("keydown", (event) => {
