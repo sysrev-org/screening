@@ -81,7 +81,7 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
 .choice.maybe { color: var(--maybe); } .choice.maybe[aria-pressed="true"] { background: var(--maybe-bg); border-color: var(--maybe); }
 .choice.exclude { color: var(--exclude); } .choice.exclude[aria-pressed="true"] { background: var(--exclude-bg); border-color: var(--exclude); }
 .choice:disabled { opacity: .45; cursor: default; }
-.decide .note { flex: 1 1 220px; min-width: 0; }
+.decide .note { flex: 1 1 140px; min-width: 0; }
 .nav { display: flex; gap: 6px; }
 
 .decision-list { margin: 10px 0; padding: 0; list-style: none; }
@@ -90,6 +90,25 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
 .tag.include { color: var(--include); } .tag.exclude { color: var(--exclude); } .tag.maybe { color: var(--maybe); }
 .consensus { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
 .consensus input { flex: 1 1 200px; min-width: 0; }
+
+.decide select { max-width: 220px; }
+.decide select.missing { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclude-bg); }
+.reason { color: var(--muted); font-size: 14px; }
+
+.ft-tabs { display: flex; gap: 6px; margin: 14px 0 10px; flex-wrap: wrap; }
+.fulltext { border-top: 1px solid var(--border); padding-top: 12px; overflow-wrap: anywhere; }
+.fulltext h2 { font-size: 19px; margin: 22px 0 8px; }
+.fulltext h3 { font-size: 17px; margin: 18px 0 6px; }
+.fulltext h4, .fulltext h5, .fulltext h6 { font-size: 16px; margin: 14px 0 6px; }
+.fulltext p { margin: 0 0 10px; }
+.fulltext ul, .fulltext ol { margin: 0 0 10px; padding-left: 24px; }
+.fulltext blockquote { margin: 0 0 10px; padding-left: 12px; border-left: 3px solid var(--border); color: var(--muted); }
+.fulltext pre { white-space: pre-wrap; background: var(--bg); padding: 8px; border-radius: 6px; }
+.fulltext .table-wrap { overflow-x: auto; margin: 0 0 14px; }
+.fulltext table { border-collapse: collapse; font-size: 14px; }
+.fulltext th, .fulltext td { border: 1px solid var(--border); padding: 4px 8px; vertical-align: top; text-align: left; }
+.fulltext th { background: var(--bg); }
+iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-radius: 8px; }
 
 .login { max-width: 520px; margin: 40px auto; }
 .login label { display: block; font-weight: 600; margin: 14px 0 4px; }
@@ -101,7 +120,7 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
 <body>
 <header>
   <div class="bar">
-    <span class="brand">Screening</span>
+    <span class="brand">Screening <span id="stageLabel"></span></span>
     <span class="review-title" id="reviewTitle"></span>
     <span class="save" id="saveState" hidden></span>
     <span class="user" id="user"></span>
@@ -114,7 +133,7 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
   <div id="banner" class="banner" hidden></div>
 
   <section id="loginView" class="card login" hidden>
-    <h1 style="margin-top:0">Screening di titolo e abstract</h1>
+    <h1 style="margin-top:0">Screening</h1>
     <p class="muted">Per entrare servono il nome del repository della review e il tuo token GitHub.
       <span id="guide">La guida per i revisori, nel repository della review, spiega come creare il token.</span></p>
     <form id="loginForm">
@@ -129,6 +148,11 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
   </section>
 
   <section id="loadingView" class="card" hidden><p id="loadingText">Caricamento…</p></section>
+
+  <nav class="tabs" id="stageTabs" hidden aria-label="Fase dello screening">
+    <button class="tab" data-stage="title_abstract" aria-selected="false">Titolo e abstract</button>
+    <button class="tab" data-stage="full_text" aria-selected="false">Full text</button>
+  </nav>
 
   <nav class="tabs" id="tabs" hidden>
     <button class="tab" id="tabScreen" aria-selected="true">Le mie decisioni</button>
@@ -151,6 +175,7 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
     </div>
     <div class="card help" id="help" hidden>
       <span class="keys"><kbd>I</kbd> includi · <kbd>F</kbd> forse · <kbd>E</kbd> escludi ·
+      <span id="reasonKeys" hidden><kbd>1</kbd>…<kbd>9</kbd> escludi con quel motivo ·</span>
       <kbd>←</kbd> <kbd>→</kbd> record precedente / successivo · <kbd>N</kbd> scrivi una nota</span>.
       Le decisioni si salvano da sole su GitHub dopo pochi secondi; puoi cambiarle quando vuoi finché lo screening è aperto.
     </div>
@@ -178,6 +203,7 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
       <button class="choice maybe" data-decision="maybe" aria-pressed="false">Forse<kbd>F</kbd></button>
       <button class="choice exclude" data-decision="exclude" aria-pressed="false">Escludi<kbd>E</kbd></button>
     </div>
+    <select id="reason" hidden aria-label="Motivo di esclusione"></select>
     <input type="text" class="note" id="note" placeholder="Nota (facoltativa)" aria-label="Nota">
     <div class="nav">
       <button class="btn" id="prev" aria-label="Record precedente">←</button>
@@ -190,10 +216,13 @@ mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 
 "use strict";
 
 const API = "https://api.github.com";
-const STAGE_DIR = "screening/title_abstract";
 const RECORDS_PATH = "records/records.csv";
-const DECISION_FIELDS = ["record_id", "decision", "note", "updated_at"];
-const CONSENSUS_FIELDS = ["record_id", "decision", "note", "decided_by", "updated_at"];
+const STAGES = { title_abstract: "titolo/abstract", full_text: "full text" };
+const DECISION_FIELDS = {
+  title_abstract: ["record_id", "decision", "note", "updated_at"],
+  full_text: ["record_id", "decision", "reason", "note", "updated_at"],
+};
+const CONSENSUS_FIELDS = ["record_id", "decision", "reason", "note", "decided_by", "updated_at"];
 const LABELS = { include: "Incluso", maybe: "Forse", exclude: "Escluso" };
 const DECISION_WORDS = {
   include: "include", includi: "include", incluso: "include", si: "include", "sì": "include",
@@ -202,7 +231,8 @@ const DECISION_WORDS = {
 };
 
 const S = {
-  repo: "", token: "", login: "",
+  repo: "", token: "", login: "", stage: "title_abstract", stages: [],
+  mdFiles: new Set(), pdfFiles: new Set(), mdCache: new Map(), pdfUrl: null, view: "text",
   state: null, records: new Map(), mine: [],
   decisions: new Map(), decisionsSha: null, dirty: new Set(),
   filter: "todo", search: "", currentId: null,
@@ -211,6 +241,9 @@ const S = {
 };
 
 const $ = (id) => document.getElementById(id);
+const isFullText = () => S.stage === "full_text";
+const stageDir = () => `screening/${S.stage}`;
+const reasons = () => (S.state && S.state.exclusion_reasons) || [];
 
 // ---------------------------------------------------------------- helpers
 
@@ -380,8 +413,8 @@ function explain(error) {
 
 const saving = { timer: null, busy: false, again: false, retry: null };
 
-function decisionsPath() { return `${STAGE_DIR}/decisions/${S.login}.csv`; }
-function pendingKey() { return `sysrev:pending:${S.repo}:${S.login}`; }
+function decisionsPath() { return `${stageDir()}/decisions/${S.login}.csv`; }
+function pendingKey() { return `sysrev:pending:${S.repo}:${isFullText() ? "full_text:" : ""}${S.login}`; }
 
 function persistPending() {
   const pending = [...S.dirty].map((id) => [id, S.decisions.get(id)]);
@@ -410,7 +443,10 @@ function mergeRemote(text) {
     if (!row.record_id || !decision) continue;
     const local = S.decisions.get(row.record_id);
     if (!local || (row.updated_at || "") > (local.updated_at || "")) {
-      S.decisions.set(row.record_id, { record_id: row.record_id, decision, note: row.note || "", updated_at: row.updated_at || "" });
+      S.decisions.set(row.record_id, {
+        record_id: row.record_id, decision, reason: decision === "exclude" ? row.reason || "" : "",
+        note: row.note || "", updated_at: row.updated_at || "",
+      });
       S.dirty.delete(row.record_id);
     }
   }
@@ -437,8 +473,8 @@ async function saveNow() {
       const rows = [...S.decisions.values()].sort((a, b) => num(a.record_id) - num(b.record_id));
       try {
         S.decisionsSha = await writeFile(
-          decisionsPath(), toCSV(DECISION_FIELDS, rows), S.decisionsSha,
-          `Screening titolo/abstract: ${sent.size} decisioni (${S.login})`,
+          decisionsPath(), toCSV(DECISION_FIELDS[S.stage], rows), S.decisionsSha,
+          `Screening ${STAGES[S.stage]}: ${sent.size} decisioni (${S.login})`,
         );
         break;
       } catch (error) {
@@ -526,17 +562,181 @@ function recordBody(record) {
   if (language && !["eng", "english", "en"].includes(language)) extra.push(el("div", {}, "Lingua: ", record.language));
   if (record.keywords) extra.push(el("div", {}, "Parole chiave: ", highlighted(record.keywords)));
   if (record.mesh_terms) extra.push(el("div", {}, "MeSH: ", record.mesh_terms));
+  const abstractBlock = el("div", { class: "abstract" },
+    abstract.length ? abstract.map((p) => el("p", {}, highlighted(p))) : el("p", { class: "muted", text: "Abstract non disponibile." }));
   return [
     el("div", { class: "record-meta" }, el("span", { class: "badge", text: record.record_id }),
       types.map((t) => el("span", { class: "badge", text: t }))),
     el("h2", {}, highlighted(record.title || "(senza titolo)")),
     shownAuthors ? el("div", { class: "authors", text: shownAuthors }) : null,
     source ? el("div", { class: "source", text: source }) : null,
-    el("div", { class: "abstract" },
-      abstract.length ? abstract.map((p) => el("p", {}, highlighted(p))) : el("p", { class: "muted", text: "Abstract non disponibile." })),
+    isFullText() ? el("details", {}, el("summary", { class: "small", text: "Abstract" }), abstractBlock) : abstractBlock,
     extra.length ? el("div", { class: "extra" }, extra) : null,
     el("div", { class: "links" }, recordLinks(record)),
   ];
+}
+
+// ---------------------------------------------------------------- Markdown (full texts)
+
+// A small, safe renderer for the Markdown written by sysrev (from JATS XML or Docling):
+// the text never becomes HTML; only <sup>, <sub> and <br> are recognised.
+const INLINE_MD = /(\*\*[^*]+?\*\*|\*[^*\s][^*]*?\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|<sup>[\s\S]*?<\/sup>|<sub>[\s\S]*?<\/sub>|<br\s*\/?>)/gi;
+const entityDecoder = document.createElement("textarea");
+
+function decodeEntities(text) {
+  if (!text.includes("&")) return text;
+  entityDecoder.innerHTML = text.replace(/</g, "&lt;");  // a <textarea> never creates elements
+  return entityDecoder.value;
+}
+
+function inlineMd(text) {
+  const fragment = document.createDocumentFragment();
+  let last = 0;
+  for (const match of text.matchAll(INLINE_MD)) {
+    fragment.append(highlighted(decodeEntities(text.slice(last, match.index))));
+    const token = match[0];
+    if (token.startsWith("**")) fragment.append(el("strong", {}, inlineMd(token.slice(2, -2))));
+    else if (token.startsWith("*")) fragment.append(el("em", {}, inlineMd(token.slice(1, -1))));
+    else if (token.startsWith("`")) fragment.append(el("code", { text: token.slice(1, -1) }));
+    else if (token.startsWith("[")) {
+      const [, label, url] = token.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
+      const href = safeUrl(url);
+      fragment.append(href ? el("a", { href, target: "_blank", rel: "noopener" }, inlineMd(label)) : inlineMd(label));
+    } else if (/^<sup>/i.test(token)) fragment.append(el("sup", {}, inlineMd(token.slice(5, -6))));
+    else if (/^<sub>/i.test(token)) fragment.append(el("sub", {}, inlineMd(token.slice(5, -6))));
+    else fragment.append(el("br"));
+    last = match.index + token.length;
+  }
+  fragment.append(highlighted(decodeEntities(text.slice(last))));
+  return fragment;
+}
+
+function tableCells(line) {
+  return line.trim().replace(/^\|/, "").replace(/\|$/, "").split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
+}
+
+function renderMarkdown(md) {
+  if (md.startsWith("---\n")) {
+    const end = md.indexOf("\n---", 4);
+    if (end !== -1) md = md.slice(md.indexOf("\n", end + 1) + 1);
+  }
+  const lines = md.replace(/<!--[\s\S]*?-->/g, "").split("\n");
+  const out = document.createDocumentFragment();
+  const isBlockStart = (line) => /^(#{1,6}\s|>|\s*([-*+]|\d+\.)\s|\$\$)/.test(line) || line.trim().startsWith("|");
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) { i++; continue; }
+    let match = line.match(/^(#{1,6})\s+(.*)$/);
+    if (match) {
+      out.append(el(`h${Math.min(match[1].length + 1, 6)}`, {}, inlineMd(match[2])));
+      i++;
+      continue;
+    }
+    if (line.trim().startsWith("|") && /^\s*\|?\s*:?-{3,}/.test(lines[i + 1] || "")) {
+      const header = tableCells(line);
+      const body = [];
+      i += 2;
+      while (i < lines.length && lines[i].trim().startsWith("|")) body.push(tableCells(lines[i++]));
+      out.append(el("div", { class: "table-wrap" }, el("table", {},
+        el("thead", {}, el("tr", {}, header.map((c) => el("th", {}, inlineMd(c))))),
+        el("tbody", {}, body.map((row) => el("tr", {}, row.map((c) => el("td", {}, inlineMd(c)))))))));
+      continue;
+    }
+    if (line.trim() === "$$") {
+      const formula = [];
+      i++;
+      while (i < lines.length && lines[i].trim() !== "$$") formula.push(lines[i++]);
+      i++;
+      out.append(el("pre", { text: formula.join("\n") }));
+      continue;
+    }
+    if (line.startsWith(">")) {
+      const quote = [];
+      while (i < lines.length && lines[i].startsWith(">")) quote.push(lines[i++].replace(/^>\s?/, ""));
+      out.append(el("blockquote", {}, inlineMd(quote.join(" "))));
+      continue;
+    }
+    match = line.match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/);
+    if (match) {
+      const list = el(/\d/.test(match[2]) ? "ol" : "ul");
+      while (i < lines.length) {
+        const item = lines[i].match(/^(\s*)([-*+]|\d+\.)\s+(.*)$/);
+        if (!item) break;
+        list.append(el("li", { style: item[1].length ? `margin-left:${item[1].length * 8}px` : null }, inlineMd(item[3])));
+        i++;
+      }
+      out.append(list);
+      continue;
+    }
+    const paragraph = [];
+    while (i < lines.length && lines[i].trim() && !(paragraph.length && isBlockStart(lines[i]))) paragraph.push(lines[i++]);
+    out.append(el("p", {}, inlineMd(paragraph.join(" "))));
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------- full text panel
+
+async function loadMarkdown(id) {
+  if (!S.mdCache.has(id)) {
+    const file = await readFile(`fulltext/md/${id}.md`);
+    S.mdCache.set(id, file ? file.text : null);
+  }
+  return S.mdCache.get(id);
+}
+
+async function showPdf(id, container) {
+  container.replaceChildren(el("p", { class: "muted", text: "Caricamento del PDF…" }));
+  try {
+    const response = await api(contentsUrl(`fulltext/pdf/${id}.pdf`), { accept: "application/vnd.github.raw+json" });
+    const blob = new Blob([await response.arrayBuffer()], { type: "application/pdf" });
+    if (S.pdfUrl) URL.revokeObjectURL(S.pdfUrl);
+    S.pdfUrl = URL.createObjectURL(blob);
+    if (S.currentId !== id) return;
+    container.replaceChildren(
+      el("iframe", { class: "pdf", src: S.pdfUrl, title: "PDF dell'articolo" }),
+      el("p", { class: "small" }, el("a", { href: S.pdfUrl, target: "_blank", rel: "noopener", text: "Apri il PDF in una nuova scheda" })));
+  } catch (error) {
+    container.replaceChildren(el("p", { class: "muted", text: `PDF non caricato: ${explain(error)}` }));
+  }
+}
+
+async function showText(id, container) {
+  container.replaceChildren(el("p", { class: "muted", text: "Caricamento del testo…" }));
+  try {
+    const md = await loadMarkdown(id);
+    if (S.currentId !== id) return;
+    if (md === null) {
+      container.replaceChildren(el("p", { class: "muted", text: "Il testo in Markdown non c'è: guarda il PDF." }));
+      return;
+    }
+    container.replaceChildren(renderMarkdown(md));
+  } catch (error) {
+    container.replaceChildren(el("p", { class: "muted", text: `Testo non caricato: ${explain(error)}` }));
+  }
+}
+
+function fullTextPanel(id) {
+  const hasText = S.mdFiles.has(id);
+  const hasPdf = S.pdfFiles.has(id);
+  const container = el("div", { class: "fulltext" });
+  let view = S.view === "pdf" && hasPdf ? "pdf" : hasText ? "text" : hasPdf ? "pdf" : "none";
+  const tabs = el("div", { class: "ft-tabs" });
+  const select = (next, chosen = false) => {
+    view = next;
+    if (chosen) S.view = next;  // remember only what the reviewer picked, not the fallback
+    for (const button of tabs.children) button.setAttribute("aria-selected", String(button.dataset.view === view));
+    if (view === "pdf") showPdf(id, container); else showText(id, container);
+  };
+  if (hasText) tabs.append(el("button", { class: "tab", "data-view": "text", onclick: () => select("text", true) }, "Testo"));
+  if (hasPdf) tabs.append(el("button", { class: "tab", "data-view": "pdf", onclick: () => select("pdf", true) }, "PDF"));
+  if (view === "none") {
+    container.append(el("p", { class: "muted", text: "Il full text di questo record non è nel repository." }));
+  } else {
+    queueMicrotask(() => select(view));
+  }
+  return [tabs, container];
 }
 
 // ---------------------------------------------------------------- screening view
@@ -584,6 +784,7 @@ function renderScreen() {
     return;
   }
   card.append(...recordBody(record).filter(Boolean));
+  if (isFullText()) card.append(...fullTextPanel(record.record_id));
   decideBar.hidden = false;
   const current = S.decisions.get(record.record_id);
   for (const button of document.querySelectorAll(".choice")) {
@@ -593,6 +794,10 @@ function renderScreen() {
   const note = $("note");
   note.value = current?.note || "";
   note.disabled = S.closed;
+  const reason = $("reason");
+  reason.value = current?.decision === "exclude" ? current.reason || "" : "";
+  reason.disabled = S.closed;
+  reason.classList.remove("missing");
 }
 
 function move(step) {
@@ -602,18 +807,51 @@ function move(step) {
   if (target) { S.currentId = target; renderScreen(); window.scrollTo(0, 0); }
 }
 
-function decide(decision) {
+function decide(decision, reason) {
   if (S.closed || !S.currentId) return;
+  if (decision === "exclude" && isFullText()) {
+    reason = reason ?? $("reason").value;
+    if (!reason) {
+      // At full-text stage an exclusion needs its reason.
+      S.awaitingReason = true;
+      $("reason").classList.add("missing");
+      $("reason").focus();
+      showBanner("Scegli il motivo di esclusione (menu accanto ai pulsanti, oppure i tasti 1–9).");
+      return;
+    }
+  }
+  showBanner("");
+  S.awaitingReason = false;
   const id = S.currentId;
   const ids = visibleIds();
   const nextId = ids[ids.indexOf(id) + 1] ?? null;
-  S.decisions.set(id, { record_id: id, decision, note: $("note").value.trim(), updated_at: nowIso() });
+  S.decisions.set(id, {
+    record_id: id, decision, reason: decision === "exclude" ? reason || "" : "",
+    note: $("note").value.trim(), updated_at: nowIso(),
+  });
   S.dirty.add(id);
   scheduleSave();
   // Go on to the next record of the list (in "Da fare" the decided record leaves the list).
   S.currentId = S.filter === "todo" ? nextId : (nextId ?? id);
   renderScreen();
   window.scrollTo(0, 0);
+}
+
+function changeReason() {
+  const current = S.decisions.get(S.currentId);
+  const reason = $("reason").value;
+  $("reason").classList.remove("missing");
+  if (S.closed || !reason) return;
+  if (current?.decision === "exclude") {
+    // Changing the reason of an exclusion already recorded.
+    if (current.reason === reason) return;
+    S.decisions.set(S.currentId, { ...current, reason, updated_at: nowIso() });
+    S.dirty.add(S.currentId);
+    scheduleSave();
+    renderScreen();
+  } else if (S.awaitingReason) {
+    decide("exclude", reason);  // the reason was missing for an exclusion just requested
+  }
 }
 
 function saveNote() {
@@ -635,8 +873,12 @@ function outcomeOf(recordId) {
     if (row) values[reviewer] = row;
   }
   const decisions = new Set(Object.values(values).map((v) => v.decision));
+  const reasonsGiven = new Set(Object.values(values).map((v) => v.reason || ""));
   if (Object.keys(values).length < reviewers.length) return { kind: "pending", values };
-  if (decisions.size === 1 && (decisions.has("include") || decisions.has("exclude"))) return { kind: "agreement", values };
+  if (decisions.size === 1 && decisions.has("include")) return { kind: "agreement", values };
+  // Same rule as sysrev: at full-text stage, exclusions must also agree on the reason.
+  const sameReason = !isFullText() || (reasonsGiven.size === 1 && !reasonsGiven.has(""));
+  if (decisions.size === 1 && decisions.has("exclude") && sameReason) return { kind: "agreement", values };
   if (S.state.conflicts === "include_if_any") return { kind: "include_if_any", values };
   return { kind: S.consensus.has(recordId) ? "resolved" : "open", values };
 }
@@ -672,7 +914,15 @@ function conflictCard(id, outcome, reviewers) {
   const agreed = S.consensus.get(id);
   const editable = canDecideConflict(reviewers);
   const note = el("input", { type: "text", placeholder: "Nota sulla decisione (facoltativa)", value: agreed?.note || "", disabled: !editable });
-  const choose = (decision) => saveConsensus(id, decision, note.value.trim());
+  const reasonSelect = isFullText() ? reasonPicker(agreed?.decision === "exclude" ? agreed.reason : "", !editable) : null;
+  const choose = (decision) => {
+    if (decision === "exclude" && reasonSelect && !reasonSelect.value) {
+      reasonSelect.classList.add("missing");
+      reasonSelect.focus();
+      return;
+    }
+    saveConsensus(id, decision, note.value.trim(), decision === "exclude" && reasonSelect ? reasonSelect.value : "");
+  };
   const body = recordBody(record);
   return el("article", { class: "card record", "data-record": id },
     body.slice(0, 4),
@@ -681,35 +931,47 @@ function conflictCard(id, outcome, reviewers) {
       const row = outcome.values[reviewer];
       return el("li", {}, el("strong", { text: reviewer }), ": ",
         row ? el("span", { class: `tag ${row.decision}`, text: LABELS[row.decision] }) : el("span", { class: "muted", text: "nessuna decisione" }),
+        row?.reason ? el("span", { class: "reason" }, ` (${row.reason})`) : null,
         row?.note ? el("span", { class: "muted" }, " — ", row.note) : null);
     })),
     agreed
       ? el("p", {}, "Decisione concordata: ", el("span", { class: `tag ${agreed.decision}`, text: LABELS[agreed.decision] }),
+          agreed.reason ? el("span", { class: "reason" }, ` (${agreed.reason})`) : null,
           el("span", { class: "muted small", text: ` (registrata da ${agreed.decided_by}${agreed.updated_at ? `, ${formatDate(agreed.updated_at)}` : ""})` }))
       : null,
     editable
       ? el("div", { class: "consensus" },
           el("button", { class: "choice include", "aria-pressed": String(agreed?.decision === "include"), onclick: () => choose("include") }, "Includi"),
           el("button", { class: "choice exclude", "aria-pressed": String(agreed?.decision === "exclude"), onclick: () => choose("exclude") }, "Escludi"),
+          reasonSelect,
           note)
       : el("p", { class: "muted small", text: `La decisione spetta a ${S.state.arbiter}.` }),
   );
 }
 
-async function saveConsensus(recordId, decision, note) {
-  const row = { record_id: recordId, decision, note, decided_by: S.login, updated_at: nowIso() };
+function reasonPicker(value, disabled) {
+  const select = el("select", { "aria-label": "Motivo di esclusione", disabled },
+    el("option", { value: "", text: "Motivo di esclusione…" }),
+    reasons().map((r, i) => el("option", { value: r, text: `${i + 1}. ${r}` })));
+  select.value = value || "";
+  select.addEventListener("change", () => select.classList.remove("missing"));
+  return select;
+}
+
+async function saveConsensus(recordId, decision, note, reason = "") {
+  const row = { record_id: recordId, decision, reason, note, decided_by: S.login, updated_at: nowIso() };
   S.consensus.set(recordId, row);
   setSaveState("saving", "Salvataggio…");
   try {
     for (let attempt = 0; ; attempt++) {
       const rows = [...S.consensus.values()].sort((a, b) => num(a.record_id) - num(b.record_id));
       try {
-        S.consensusSha = await writeFile(`${STAGE_DIR}/consensus.csv`, toCSV(CONSENSUS_FIELDS, rows), S.consensusSha,
-          `Screening titolo/abstract: decisione concordata su ${recordId} (${S.login})`);
+        S.consensusSha = await writeFile(`${stageDir()}/consensus.csv`, toCSV(CONSENSUS_FIELDS, rows), S.consensusSha,
+          `Screening ${STAGES[S.stage]}: decisione concordata su ${recordId} (${S.login})`);
         break;
       } catch (error) {
         if ((error.status === 409 || error.status === 422) && attempt < 3) {
-          const remote = await readFile(`${STAGE_DIR}/consensus.csv`);
+          const remote = await readFile(`${stageDir()}/consensus.csv`);
           S.consensusSha = remote ? remote.sha : null;
           if (remote) loadConsensus(remote.text, true);
           continue;
@@ -730,6 +992,7 @@ function loadConsensus(text, keepNewer = false) {
   for (const row of parseCSV(text)) {
     const decision = normalizeDecision(row.decision);
     if (!row.record_id || !["include", "exclude"].includes(decision)) continue;
+    if (isFullText() && decision === "exclude" && !row.reason) continue;  // an exclusion needs its reason
     const local = S.consensus.get(row.record_id);
     if (keepNewer && local && (local.updated_at || "") >= (row.updated_at || "")) continue;
     S.consensus.set(row.record_id, { ...row, decision });
@@ -761,12 +1024,19 @@ async function start() {
 
   try {
     loading("Caricamento delle impostazioni…");
-    const stateFile = await readFile(`${STAGE_DIR}/state.json`);
-    if (!stateFile) {
+    const [titleAbstractState, fullTextState] = await Promise.all([
+      readFile("screening/title_abstract/state.json"), readFile("screening/full_text/state.json"),
+    ]);
+    S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text"].filter(Boolean);
+    if (!S.stages.length) {
       showView(null);
       return showBanner("Lo screening non è ancora stato preparato. Chi coordina deve lanciare \"sysrev screening assign\" e caricare le modifiche su GitHub.", true);
     }
+    const wanted = new URLSearchParams(location.search).get("stage");
+    S.stage = S.stages.includes(wanted) ? wanted : S.stages[S.stages.length - 1];
+    const stateFile = S.stage === "full_text" ? fullTextState : titleAbstractState;
     S.state = JSON.parse(stateFile.text);
+    setupStage();
     S.closed = S.state.status === "closed";
     $("reviewTitle").textContent = S.state.title || S.repo;
     document.title = `Screening · ${S.state.title || S.repo}`;
@@ -774,8 +1044,14 @@ async function start() {
 
     loading("Caricamento dei record…");
     const [recordsFile, assignmentsFile, decisionsFile] = await Promise.all([
-      readFile(RECORDS_PATH), readFile(`${STAGE_DIR}/assignments.csv`), readFile(decisionsPath()),
+      readFile(RECORDS_PATH), readFile(`${stageDir()}/assignments.csv`), readFile(decisionsPath()),
     ]);
+    if (isFullText()) {
+      // Which full texts are in the repository (a folder listing shows up to 1000 files).
+      const [mdList, pdfList] = await Promise.all([listDir("fulltext/md"), listDir("fulltext/pdf")]);
+      S.mdFiles = new Set(mdList.filter((f) => f.name.endsWith(".md")).map((f) => f.name.slice(0, -3)));
+      S.pdfFiles = new Set(pdfList.filter((f) => f.name.endsWith(".pdf")).map((f) => f.name.slice(0, -4)));
+    }
     for (const record of parseCSV(recordsFile ? recordsFile.text : "")) S.records.set(record.record_id, record);
     S.assignments = new Map();
     for (const row of parseCSV(assignmentsFile ? assignmentsFile.text : "")) {
@@ -798,7 +1074,8 @@ async function start() {
 
   if (!S.mine.length && !S.closed) {
     showView(null);
-    return showBanner(`Non hai record assegnati in questa review. Chiedi a chi coordina di controllare che "${S.login}" sia tra i reviewers in review.yml e di lanciare "sysrev screening assign".`, true);
+    const command = isFullText() ? "sysrev screening assign --full-text" : "sysrev screening assign";
+    return showBanner(`Non hai record assegnati nello screening ${STAGES[S.stage]}. Chiedi a chi coordina di controllare che "${S.login}" sia tra i revisori in review.yml e di lanciare "${command}".`, true);
   }
   if (S.closed) {
     S.filter = "all";
@@ -807,6 +1084,20 @@ async function start() {
   } else showBanner("");
   $("tabs").hidden = !S.closed || S.state.conflicts === "include_if_any";
   selectTab("screen");
+}
+
+function setupStage() {
+  $("stageLabel").textContent = `· ${STAGES[S.stage]}`;
+  $("stageTabs").hidden = S.stages.length < 2;
+  for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
+    button.setAttribute("aria-selected", String(button.dataset.stage === S.stage));
+    button.hidden = !S.stages.includes(button.dataset.stage);
+  }
+  const select = $("reason");
+  select.hidden = !isFullText();
+  $("reasonKeys").hidden = !isFullText();
+  select.replaceChildren(el("option", { value: "", text: "Motivo di esclusione…" }),
+    ...reasons().map((r, i) => el("option", { value: r, text: `${i + 1}. ${r}` })));
 }
 
 function restorePending() {
@@ -825,7 +1116,7 @@ function restorePending() {
 async function loadClosed() {
   loading("Caricamento delle decisioni di tutti i revisori…");
   S.others = new Map();
-  const files = (await listDir(`${STAGE_DIR}/decisions`)).filter((f) => f.type === "file" && f.name.endsWith(".csv"));
+  const files = (await listDir(`${stageDir()}/decisions`)).filter((f) => f.type === "file" && f.name.endsWith(".csv"));
   await Promise.all(files.map(async (file) => {
     const reviewer = file.name.slice(0, -4).toLowerCase();
     if (reviewer === S.login) return;
@@ -833,11 +1124,11 @@ async function loadClosed() {
     const rows = new Map();
     for (const row of parseCSV(content ? content.text : "")) {
       const decision = normalizeDecision(row.decision);
-      if (row.record_id && decision) rows.set(row.record_id, { ...row, decision });
+      if (row.record_id && decision) rows.set(row.record_id, { ...row, decision, reason: decision === "exclude" ? row.reason || "" : "" });
     }
     S.others.set(reviewer, rows);
   }));
-  const consensus = await readFile(`${STAGE_DIR}/consensus.csv`);
+  const consensus = await readFile(`${stageDir()}/consensus.csv`);
   S.consensus = new Map();
   S.consensusSha = consensus ? consensus.sha : null;
   if (consensus) loadConsensus(consensus.text);
@@ -901,6 +1192,16 @@ for (const button of document.querySelectorAll(".choice[data-decision]")) {
 $("prev").addEventListener("click", () => move(-1));
 $("next").addEventListener("click", () => move(1));
 $("note").addEventListener("change", saveNote);
+$("reason").addEventListener("change", () => { changeReason(); $("reason").blur(); });
+for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
+  button.addEventListener("click", async () => {
+    if (button.dataset.stage === S.stage) return;
+    if (S.dirty.size) await saveNow();
+    const params = new URLSearchParams(location.search);
+    params.set("stage", button.dataset.stage);
+    location.search = params.toString();
+  });
+}
 $("filter").addEventListener("change", () => { S.filter = $("filter").value; S.currentId = null; renderScreen(); });
 $("search").addEventListener("input", () => { S.search = $("search").value; S.currentId = null; renderScreen(); });
 $("helpButton").addEventListener("click", () => { $("help").hidden = !$("help").hidden; });
@@ -923,6 +1224,7 @@ document.addEventListener("keydown", (event) => {
   else if (key === "arrowleft") move(-1);
   else if (key === "arrowright") move(1);
   else if (key === "n" && !S.closed) { event.preventDefault(); $("note").focus(); }
+  else if (isFullText() && /^[1-9]$/.test(key) && reasons()[Number(key) - 1]) decide("exclude", reasons()[Number(key) - 1]);
   else return;
   event.preventDefault();
 });
