@@ -159,6 +159,97 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
 .flash { animation: flash 2.5s ease-out; }
 @keyframes flash { from { background: var(--hl-include); } to { background: transparent; } }
 
+/* home: the phases of the review, drawn like a PRISMA flow diagram */
+.brand { color: inherit; text-decoration: none; }
+a.brand:hover #brandName { color: var(--accent); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.home { display: grid; gap: 16px; }
+.eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.home-top { display: grid; gap: 18px; margin: 0; }
+.home-top h1 { margin: 2px 0 2px; font-size: 26px; line-height: 1.2; text-wrap: balance; }
+.home-top .repo { margin: 0; font-size: 14px; color: var(--muted); }
+.where { display: grid; gap: 8px; }
+.where p { margin: 0; }
+.where strong { font-size: 17px; }
+.phase-bar { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
+.phase-bar li { height: 8px; border-radius: 2px; background: var(--border); }
+.phase-bar li.done { background: var(--include); }
+.phase-bar li.open { background: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+.phase-bar li.current { background: var(--accent); }
+.task { display: flex; gap: 12px 20px; align-items: center; flex-wrap: wrap; padding: 14px 16px; border-radius: 10px; background: var(--bg); }
+.task.turn { background: var(--maybe-bg); }
+.task .grow { flex: 1 1 260px; min-width: 0; }
+.task p { margin: 0; }
+.task .eyebrow { color: inherit; }
+.task.turn .eyebrow { color: var(--maybe); }
+.task strong { font-size: 18px; }
+.meter { display: block; height: 6px; max-width: 320px; margin-top: 8px; border-radius: 3px; overflow: hidden;
+  background: color-mix(in srgb, var(--text) 12%, transparent); }
+.meter > span { display: block; height: 100%; background: var(--include); }
+.task .btn.primary { padding: 10px 18px; font-weight: 600; text-decoration: none; }
+
+.flow-card { margin: 0; padding: 20px 20px 8px; }
+.flow-card > h2 { margin: 0 0 10px; font-size: 18px; }
+.group { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; }
+.band { display: flex; align-items: center; justify-content: center; margin: 6px 0; border-radius: 6px;
+  background: color-mix(in srgb, var(--accent) 10%, var(--card)); color: color-mix(in srgb, var(--accent) 75%, var(--text)); }
+.band span { writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px 0; font-size: 11px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.steps { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
+.step:last-child { flex: 1 0 auto; }  /* the connector reaches the next group */
+.step { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px;
+  --line-in: transparent; --line-out: transparent; }
+.step::before, .step::after { content: ""; position: absolute; left: 17px; width: 2px; }
+.step::before { top: 0; height: 16px; background: var(--line-in); }
+.step::after { top: 48px; bottom: 0; background: var(--line-out); }
+.node { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
+  margin: 16px 2px 0; border-radius: 50%; border: 2px solid var(--border); background: var(--card); color: var(--muted);
+  font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.step.done .node { border-color: var(--include); background: var(--include); color: var(--card); }
+.step.open .node { border-color: var(--accent); color: var(--accent); }
+.step.current .node { background: var(--accent); border-color: var(--accent); color: var(--accent-text);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+.node svg { width: 16px; height: 16px; }
+.step-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; width: 100%;
+  margin: 6px 0; padding: 10px 12px; border: 1px solid transparent; border-radius: 10px; background: none;
+  color: inherit; text-align: left; text-decoration: none; font: inherit; }
+a.step-body, button.step-body { cursor: pointer; }
+a.step-body:hover, button.step-body:hover { background: var(--bg); border-color: var(--border); }
+.step.current .step-body { background: color-mix(in srgb, var(--accent) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
+.step.todo:not(.current) .step-title { color: var(--muted); }
+.step-main { display: grid; gap: 3px; min-width: 0; }
+.step-head { display: flex; gap: 6px 10px; align-items: baseline; flex-wrap: wrap; }
+.step-title { font-size: 17px; font-weight: 600; }
+.step-detail { font-size: 14px; color: var(--muted); }
+.step-mine { font-size: 14px; }
+.step-mine .meter { max-width: 240px; margin-top: 4px; }
+.step-side { display: grid; gap: 2px; justify-items: end; text-align: right; }
+.figure { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.figure small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
+.go { font-size: 14px; font-weight: 600; color: var(--accent); white-space: nowrap; }
+.pill { font-size: 12px; font-weight: 600; line-height: 1.6; padding: 0 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+.pill.done { color: var(--include); background: var(--include-bg); }
+.pill.open { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
+.pill.todo { color: var(--muted); border-color: var(--border); }
+.pill.turn { color: var(--maybe); background: var(--maybe-bg); }
+.pill.who { color: var(--muted); font-weight: 500; border-color: var(--border); }
+code.cmd { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 0 6px; white-space: nowrap;
+  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
+.home-docs { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 10px 0 0; padding: 12px 0 8px;
+  border-top: 1px solid var(--border); font-size: 14px; }
+.tab.home-tab { border-style: dashed; }
+@media (max-width: 640px) {
+  .home-top h1 { font-size: 22px; }
+  .flow-card { padding: 16px 12px 6px; }
+  .group { grid-template-columns: minmax(0, 1fr); }
+  .band { justify-content: flex-start; margin: 12px 0 0; background: none; }
+  .band span { writing-mode: horizontal-tb; transform: none; padding: 0; }
+  .step-body { grid-template-columns: minmax(0, 1fr); }
+  .step-side { justify-items: start; text-align: left; grid-auto-flow: column; gap: 12px; align-items: baseline; }
+  .figure small { display: inline; margin-left: 4px; }
+}
+
 .login { max-width: 520px; margin: 40px auto; }
 .login label { display: block; font-weight: 600; margin: 14px 0 4px; }
 .login input[type=text], .login input[type=password] { width: 100%; }
@@ -169,7 +260,7 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
 <body>
 <header>
   <div class="bar">
-    <span class="brand"><span id="brandName">Screening</span> <span id="stageLabel"></span></span>
+    <a class="brand" id="brandLink" href="?" title="Tutte le fasi della review"><span id="brandName">sysrev</span> <span id="stageLabel"></span></a>
     <span class="review-title" id="reviewTitle"></span>
     <span class="save" id="saveState" hidden></span>
     <span class="user" id="user"></span>
@@ -198,7 +289,10 @@ input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclud
 
   <section id="loadingView" class="card" hidden><p id="loadingText">Caricamento…</p></section>
 
-  <nav class="tabs" id="stageTabs" hidden aria-label="Fase dello screening">
+  <section id="homeView" class="home" hidden aria-label="Fasi della review"></section>
+
+  <nav class="tabs" id="stageTabs" hidden aria-label="Fase della review">
+    <button class="tab home-tab" id="homeTab">← Tutte le fasi</button>
     <button class="tab" data-stage="title_abstract" aria-selected="false">Titolo e abstract</button>
     <button class="tab" data-stage="full_text" aria-selected="false">Full text</button>
     <button class="tab" data-stage="extraction" aria-selected="false">Estrazione dati</button>
@@ -341,7 +435,7 @@ const DECISION_WORDS = {
 };
 
 const S = {
-  repo: "", token: "", login: "", stage: "title_abstract", stages: [],
+  repo: "", token: "", login: "", branch: "main", stage: "title_abstract", stages: [],
   mdFiles: new Set(), pdfFiles: new Set(), mdCache: new Map(), pdfUrl: null, view: "text",
   state: null, records: new Map(), mine: [],
   decisions: new Map(), decisionsSha: null, dirty: new Set(),
@@ -2091,10 +2185,343 @@ function toggleDone() {
   rerenderForm();
 }
 
+// ---------------------------------------------------------------- home: the phases of the review
+
+// The review as a sequence of phases, grouped as the side bars of a PRISMA flow diagram. The status of each
+// phase comes from the files of the review; the four phases done in this page open from here.
+const GROUPS = [
+  ["plan", "Pianificazione"], ["identify", "Identificazione"], ["select", "Selezione"],
+  ["data", "Dati degli studi"], ["synthesis", "Sintesi"],
+];
+const numberFormat = new Intl.NumberFormat("it-IT");
+const fmtN = (n) => numberFormat.format(n);
+const plural = (n, one, many) => `${fmtN(n)} ${n === 1 ? one : many}`;
+
+function homeUrl() { return `?${new URLSearchParams({ repo: S.repo })}`; }
+function stageUrl(stage) { return `?${new URLSearchParams({ repo: S.repo, stage })}`; }
+function githubUrl(path, folder = false) {
+  const branch = S.branch.split("/").map(encodeURIComponent).join("/");
+  return `https://github.com/${S.repo}/${folder ? "tree" : "blob"}/${branch}/${path}`;
+}
+
+async function navigate(search) {
+  if (S.dirty.size) await saveNow();
+  if (EX.dirty.size) await exSaveNow();
+  location.search = search;
+}
+
+function checkIcon() {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(ns, "path");
+  for (const [key, value] of Object.entries({ d: "M3 8.5l3.2 3L13 4.8", fill: "none", stroke: "currentColor",
+    "stroke-width": "2.2", "stroke-linecap": "round", "stroke-linejoin": "round" })) path.setAttribute(key, value);
+  svg.append(path);
+  return svg;
+}
+
+function meter(share) {
+  return el("span", { class: "meter", "aria-hidden": "true" },
+    el("span", { style: `width:${Math.round(100 * Math.min(1, Math.max(0, share)))}%` }));
+}
+
+// What the home shows, from the files of the review: one listing of the whole repository and a few small files.
+async function homeData(stateFiles) {
+  const d = { states: {}, paths: new Set(), treeOk: false, text: {}, mine: {}, fulltexts: new Set() };
+  for (const [stage, file] of Object.entries(stateFiles)) {
+    try { if (file) d.states[stage] = JSON.parse(file.text); } catch { /* unreadable: as if the stage had not started */ }
+  }
+  try {
+    const tree = await (await api(`${API}/repos/${S.repo}/git/trees/${encodeURIComponent(S.branch)}?recursive=1`)).json();
+    for (const item of tree.tree || []) if (item.type === "blob") d.paths.add(item.path);
+    d.treeOk = !tree.truncated;
+  } catch (error) {
+    if (error.status === 401) throw error;
+  }
+  const maybe = (path) => d.paths.has(path) || !d.treeOk;
+  const files = ["search/imports.csv", "records/duplicates_to_check.csv", "prisma/counts.csv", "fulltext/unavailable.csv",
+    "analysis/results/summary.csv", "grade/results/grade.csv"];
+  for (const stage of ["title_abstract", "full_text"]) {
+    if (d.states[stage]) files.push(`screening/${stage}/assignments.csv`, `screening/${stage}/results.csv`,
+      `screening/${stage}/decisions/${S.login}.csv`);
+  }
+  for (const stage of ["extraction", "risk_of_bias"]) if (d.states[stage]) files.push(`${stage}/assignments.csv`);
+  await inBatches(files.filter(maybe), async (path) => {
+    const file = await readFile(path);
+    if (file) d.text[path] = file.text;
+  });
+
+  let names = [...d.paths].filter((p) => /^fulltext\/(md|pdf)\/[^/]+\.(md|pdf)$/.test(p)).map((p) => p.split("/").pop());
+  if (!d.treeOk) names = (await Promise.all([listDir("fulltext/md"), listDir("fulltext/pdf")])).flat().map((f) => f.name);
+  d.fulltexts = new Set(names.filter((n) => /\.(md|pdf)$/.test(n)).map((n) => n.replace(/\.(md|pdf)$/, "")));
+
+  const assigned = (path) => {
+    const rows = parseCSV(d.text[path] || "");
+    return {
+      all: new Set(rows.map((r) => r.record_id).filter(Boolean)).size,
+      mine: new Set(rows.filter((r) => (r.reviewer || "").trim().toLowerCase() === S.login).map((r) => r.record_id)),
+    };
+  };
+  for (const stage of ["title_abstract", "full_text"]) {
+    if (!d.states[stage]) continue;
+    const { all, mine } = assigned(`screening/${stage}/assignments.csv`);
+    const decided = new Set(parseCSV(d.text[`screening/${stage}/decisions/${S.login}.csv`] || "")
+      .filter((r) => mine.has(r.record_id) && normalizeDecision(r.decision)).map((r) => r.record_id));
+    try {  // decisions still waiting in this browser count too: they are saved at the next visit
+      const key = `sysrev:pending:${S.repo}:${stage === "full_text" ? "full_text:" : ""}${S.login}`;
+      for (const [id, row] of JSON.parse(localStorage.getItem(key) || "[]")) {
+        if (row && mine.has(id) && normalizeDecision(row.decision)) decided.add(id);
+      }
+    } catch { /* storage unavailable */ }
+    d.mine[stage] = { all, total: mine.size, done: decided.size, unit: ["record", "record"], verb: "valutato" };
+  }
+  for (const stage of ["extraction", "risk_of_bias"]) {
+    const state = d.states[stage];
+    if (!state) continue;
+    const { all, mine } = assigned(`${stage}/assignments.csv`);
+    let done = 0;
+    if (mine.size && state.status !== "closed") {
+      const folder = `${stage}/data/${S.login}`;
+      let paths = [...d.paths].filter((p) => p.startsWith(`${folder}/`) && p.endsWith(".json"));
+      if (!d.treeOk) paths = (await listDir(folder)).map((f) => f.path).filter((p) => p.endsWith(".json"));
+      await inBatches(paths.filter((p) => mine.has(p.split("/").pop().slice(0, -5))), async (path) => {
+        const file = await readFile(path);
+        const doc = file && parseDoc(file.text, "", S.login);
+        if (doc && doc.status === "done") done++;
+      });
+    }
+    d.mine[stage] = { all, total: mine.size, done, unit: ["scheda", "schede"], verb: "completato" };
+  }
+  return d;
+}
+
+function buildPhases(d) {
+  const csv = (path) => parseCSV(d.text[path] || "");
+  const link = (path, folder = false) => ({ href: githubUrl(path, folder) });
+  const tally = (rows) => {
+    const count = (kind) => rows.filter((r) => r.decision === kind).length;
+    return { rows: rows.length, include: count("include"), exclude: count("exclude"), conflict: count("conflict") };
+  };
+  const phases = [];
+
+  const imports = csv("search/imports.csv");
+  const identified = imports.reduce((n, r) => n + (parseInt(r.records, 10) || 0), 0);
+  const databases = [...new Set(imports.map((r) => r.database).filter(Boolean))];
+  const lastSearch = imports.map((r) => r.search_date || "").filter(Boolean).sort().pop();
+  phases.push({
+    id: "protocol", group: "plan", title: "Protocollo", who: "Tutto il gruppo", state: imports.length ? "done" : "open",
+    detail: "Domanda di ricerca, criteri di inclusione ed esclusione", action: link("protocol/protocol.md"),
+  });
+  phases.push({
+    id: "search", group: "identify", title: "Ricerca bibliografica", who: "Chi coordina",
+    state: imports.length ? "done" : "todo",
+    detail: imports.length ? databases.join(", ") + (lastSearch ? ` · ricerca del ${formatDate(lastSearch)}` : "")
+      : "Chi coordina importa gli export delle banche dati con",
+    command: imports.length ? "" : "sysrev import",
+    figure: imports.length ? [identified, "record identificati"] : null, action: link("search/strategy.md"),
+  });
+
+  const pendingDuplicates = csv("records/duplicates_to_check.csv").filter((r) => !String(r.decision || "").trim()).length;
+  const counts = Object.fromEntries(csv("prisma/counts.csv").map((r) => [r.item, parseInt(r.n, 10) || 0]));
+  const unique = d.mine.title_abstract?.all
+    || (counts.records_identified ? counts.records_identified - (counts.duplicates_removed || 0) : 0);
+  const recordsReady = d.paths.has("records/records.csv") || (!d.treeOk && imports.length > 0);
+  phases.push({
+    id: "dedup", group: "identify", title: "Duplicati", who: "Chi coordina",
+    state: !imports.length ? "todo" : pendingDuplicates || !recordsReady ? "open" : "done",
+    detail: pendingDuplicates ? `${plural(pendingDuplicates, "coppia", "coppie")} da decidere, poi`
+      : imports.length ? "Record unici, pronti per lo screening" : "Dopo l'import delle ricerche",
+    command: pendingDuplicates ? "sysrev dedup" : "",
+    figure: unique && !pendingDuplicates ? [unique, "record unici"] : null,
+    action: pendingDuplicates ? link("records/duplicates_to_check.csv") : recordsReady ? link("records", true) : null,
+  });
+
+  const screening = (stage, title, command) => {
+    const state = d.states[stage];
+    const base = { id: stage, group: "select", title, who: "Revisori" };
+    if (!state) return { ...base, state: "todo", detail: "Chi coordina la avvia con", command };
+    const mine = d.mine[stage];
+    const reviewers = (state.reviewers || []).length;
+    if (state.status !== "closed") {
+      return { ...base, state: "open", action: { stage }, mine,
+        detail: `${plural(mine.all, "record", "record")}` + (reviewers ? ` · ${plural(reviewers, "revisore", "revisori")}` : "") };
+    }
+    const t = tally(csv(`screening/${stage}/results.csv`));
+    return { ...base, action: { stage }, state: t.conflict ? "open" : "done",
+      detail: t.conflict ? `Chiuso · ${plural(t.conflict, "conflitto", "conflitti")} da risolvere` : t.rows ? plural(t.exclude, "escluso", "esclusi") : "Chiuso",
+      figure: t.rows ? [t.include, stage === "full_text" ? (t.include === 1 ? "studio incluso" : "studi inclusi") : "inclusi"] : null };
+  };
+  phases.push(screening("title_abstract", "Screening di titolo e abstract", "sysrev screening assign"));
+
+  const titleAbstract = d.states.title_abstract;
+  const sought = tally(csv("screening/title_abstract/results.csv")).include;
+  const unavailable = csv("fulltext/unavailable.csv").length;
+  const available = d.fulltexts.size;
+  const retrievalOpen = titleAbstract?.status === "closed" && !d.states.full_text;
+  phases.push({
+    id: "retrieval", group: "select", title: "Recupero dei full text", who: "Chi coordina",
+    state: d.states.full_text ? "done" : retrievalOpen ? "open" : "todo",
+    detail: retrievalOpen && !available ? "Chi coordina li cerca con"
+      : sought ? `Su ${plural(sought, "record incluso", "record inclusi")}` + (unavailable ? ` · ${plural(unavailable, "non reperibile", "non reperibili")}` : "")
+      : "Dopo lo screening di titolo e abstract",
+    command: retrievalOpen && !available ? "sysrev fulltext fetch" : "",
+    figure: available ? [available, "disponibili"] : null, action: available ? link("fulltext", true) : null,
+  });
+  phases.push(screening("full_text", "Screening dei full text", "sysrev screening assign --full-text"));
+
+  const form = (stage, title, command, modes) => {
+    const state = d.states[stage];
+    const base = { id: stage, group: "data", title, who: "Revisori" };
+    if (!state) return { ...base, state: "todo", detail: "Chi coordina la avvia con", command };
+    const mine = d.mine[stage];
+    const closed = state.status === "closed";
+    const tools = Object.values(state.tools || {}).map((t) => t.name).filter(Boolean);
+    return { ...base, action: { stage }, state: closed ? "done" : "open", mine: closed ? null : mine,
+      detail: [plural(mine.all, "studio", "studi"), modes[state.mode] || "", tools.join(", ")].filter(Boolean).join(" · "),
+      figure: closed ? [mine.all, mine.all === 1 ? "studio" : "studi"] : null };
+  };
+  phases.push(form("extraction", "Estrazione dei dati", "sysrev extraction assign",
+    { double: "doppia estrazione", verify: "estrazione e verifica" }));
+  phases.push(form("risk_of_bias", "Rischio di bias", "sysrev rob assign",
+    { double: "doppia valutazione", verify: "valutazione e verifica" }));
+
+  const analyses = csv("analysis/results/summary.csv");
+  const extractionClosed = d.states.extraction?.status === "closed";
+  phases.push({
+    id: "meta", group: "synthesis", title: "Meta-analisi e forest plot", who: "Chi coordina",
+    state: analyses.length ? "done" : "todo",
+    detail: analyses.length ? analyses.slice(0, 3).map((a) => a.title || a.id).join(" · ") + (analyses.length > 3 ? " …" : "")
+      : extractionClosed ? "Analisi in analysis/analyses.yml, poi" : "Dopo l'estrazione dei dati",
+    command: !analyses.length && extractionClosed ? "sysrev meta" : "",
+    figure: analyses.length ? [analyses.length, "meta-analisi"] : null,
+    action: analyses.length ? link("analysis/results/meta_analysis.md") : null,
+  });
+  const graded = csv("grade/results/grade.csv");
+  const unverified = graded.filter((r) => r.verified !== "yes").length;
+  phases.push({
+    id: "grade", group: "synthesis", title: "GRADE e Summary of findings", who: "Chi coordina",
+    state: graded.length ? (unverified ? "open" : "done") : "todo",
+    detail: graded.length ? (unverified ? `${plural(unverified, "outcome", "outcome")} da controllare in grade/grade.yml`
+      : "Certezza delle prove per ogni outcome") : analyses.length ? "Dopo la meta-analisi:" : "Dopo la meta-analisi",
+    command: !graded.length && analyses.length ? "sysrev grade" : "",
+    figure: graded.length ? [graded.length, "outcome"] : null,
+    action: graded.length ? link("grade/results/grade.md") : null,
+  });
+  return phases;
+}
+
+const hasTurn = (p) => Boolean(p.mine && p.mine.total && p.mine.done < p.mine.total);
+
+function stepItem(p, i, phases, current) {
+  const li = el("li", { class: `step ${p.state}${i === current ? " current" : ""}` });
+  if (i > 0) li.style.setProperty("--line-in", phases[i - 1].state === "done" ? "var(--include)" : "var(--border)");
+  if (i < phases.length - 1) li.style.setProperty("--line-out", p.state === "done" ? "var(--include)" : "var(--border)");
+  const pills = [el("span", { class: `pill ${p.state}`, text: { done: "Completata", open: "In corso", todo: "Da iniziare" }[p.state] })];
+  if (hasTurn(p)) pills.push(el("span", { class: "pill turn", text: "Tocca a te" }));
+  pills.push(el("span", { class: "pill who", text: p.who }));
+  const mine = p.mine && p.mine.total
+    ? el("span", { class: "step-mine" }, `Hai ${p.mine.verb} ${fmtN(p.mine.done)} di ${plural(p.mine.total, ...p.mine.unit)}`,
+      meter(p.mine.done / p.mine.total))
+    : null;
+  const main = el("span", { class: "step-main" },
+    el("span", { class: "step-head" }, el("span", { class: "step-title", text: p.title }), ...pills),
+    p.detail || p.command ? el("span", { class: "step-detail" }, p.detail || "", p.command ? " " : "",
+      p.command ? el("code", { class: "cmd", text: p.command }) : null) : null,
+    mine);
+  const side = el("span", { class: "step-side" },
+    p.figure ? el("span", { class: "figure" }, `n = ${fmtN(p.figure[0])}`, el("small", { text: p.figure[1] })) : null,
+    p.action ? el("span", { class: "go", text: p.action.stage ? "Apri →" : "Su GitHub ↗" }) : null);
+  const body = p.action?.stage ? el("a", { class: "step-body", href: stageUrl(p.action.stage), "data-phase": p.id }, main, side)
+    : p.action ? el("a", { class: "step-body", href: p.action.href, target: "_blank", rel: "noopener", "data-phase": p.id }, main, side)
+      : el("div", { class: "step-body", "data-phase": p.id }, main, side);
+  li.append(el("span", { class: "node", "aria-hidden": "true" }, p.state === "done" ? checkIcon() : String(i + 1)), body);
+  return li;
+}
+
+function taskPanel(phases) {
+  const turn = phases.find(hasTurn);
+  if (turn) {
+    const left = turn.mine.total - turn.mine.done;
+    return el("div", { class: "task turn" },
+      el("div", { class: "grow" },
+        el("p", { class: "eyebrow", text: "Tocca a te" }),
+        el("p", {}, el("strong", { text: turn.title })),
+        el("p", { class: "small", text: `${left === 1 ? "Ti resta" : "Ti restano"} ${plural(left, ...turn.mine.unit)} su ${fmtN(turn.mine.total)}` }),
+        meter(turn.mine.done / turn.mine.total)),
+      el("a", { class: "btn primary", id: "continueButton", href: stageUrl(turn.id), text: turn.mine.done ? "Continua" : "Comincia" }));
+  }
+  const finished = phases.filter((p) => p.state === "open" && p.mine && p.mine.total);
+  const text = finished.length
+    ? `Hai finito la tua parte: ${finished.map((p) => p.title.toLowerCase()).join(" e ")}. La fase si chiude quando hanno finito tutti.`
+    : phases.every((p) => p.state === "done") ? "Tutte le fasi sono completate: i risultati sono su GitHub, nelle ultime due fasi."
+      : "Quando chi coordina avvia una fase in cui sei revisore, la trovi qui.";
+  return el("div", { class: "task" }, el("div", { class: "grow" },
+    el("p", { class: "eyebrow", text: "Per ora niente da fare" }), el("p", { text })));
+}
+
+function renderHome(d) {
+  const phases = buildPhases(d);
+  // The review is at its most advanced phase in progress, else at the first one still to do.
+  const lastOpen = phases.map((p) => p.state).lastIndexOf("open");
+  const current = lastOpen >= 0 ? lastOpen : phases.findIndex((p) => p.state !== "done");
+  const done = phases.filter((p) => p.state === "done").length;
+  const title = Object.values(d.states).find((state) => state && state.title)?.title || S.repo.split("/").pop();
+  document.title = `${title} · sysrev`;
+  $("brandName").textContent = "sysrev";
+  $("stageLabel").textContent = "· tutte le fasi";
+  $("reviewTitle").textContent = "";
+  $("progressBar").style.width = `${(100 * done) / phases.length}%`;
+
+  const where = el("div", { class: "where" },
+    el("p", { class: "eyebrow", text: current >= 0 ? "La review è qui" : "Review completata" }),
+    el("p", {}, el("strong", { text: current >= 0 ? `${current + 1} · ${phases[current].title}` : "Tutte le fasi sono completate" }),
+      el("span", { class: "muted small", text: ` · ${plural(done, "fase completata", "fasi completate")} su ${phases.length}` })),
+    el("ol", { class: "phase-bar", "aria-hidden": "true" },
+      ...phases.map((p, i) => el("li", { class: i === current ? "current" : p.state, title: `${i + 1} · ${p.title}` }))));
+  const top = el("section", { class: "card home-top" },
+    el("div", {},
+      el("p", { class: "eyebrow", text: "Systematic review" }),
+      el("h1", { text: title }),
+      el("p", { class: "repo" }, el("a", { href: `https://github.com/${S.repo}`, target: "_blank", rel: "noopener", text: S.repo }))),
+    where, taskPanel(phases));
+
+  const flow = el("section", { class: "card flow-card", "aria-labelledby": "flowTitle" },
+    el("h2", { id: "flowTitle", text: "Le fasi della review" }));
+  for (const [groupId, label] of GROUPS) {
+    const items = phases.map((p, i) => [p, i]).filter(([p]) => p.group === groupId);
+    flow.append(el("div", { class: "group" },
+      el("div", { class: "band", "aria-hidden": "true" }, el("span", { text: label })),
+      el("ol", { class: "steps", start: items[0][1] + 1, "aria-label": label },
+        ...items.map(([p, i]) => stepItem(p, i, phases, current)))));
+  }
+  const documents = [["protocol/protocol.md", "Protocollo"], ["search/strategy.md", "Strategia di ricerca"],
+    ["prisma/prisma.md", "Diagramma PRISMA"], ["guida-revisori.md", "Guida per i revisori"]]
+    .filter(([path]) => d.paths.has(path) || !d.treeOk);
+  flow.append(el("p", { class: "home-docs" }, el("span", { class: "eyebrow", text: "Documenti" }),
+    ...documents.map(([path, label]) => el("a", { href: githubUrl(path), target: "_blank", rel: "noopener", text: label })),
+    el("a", { href: `https://github.com/${S.repo}`, target: "_blank", rel: "noopener", text: "Repository su GitHub" })));
+
+  $("homeView").replaceChildren(top, flow);
+  showView("homeView");
+}
+
+async function startHome(stateFiles) {
+  $("stageTabs").hidden = true;
+  try {
+    loading("Caricamento della review…");
+    renderHome(await homeData(stateFiles));
+  } catch (error) {
+    showView(null);
+    showBanner(`Caricamento non riuscito: ${explain(error)}`, true);
+  }
+}
+
 // ---------------------------------------------------------------- loading
 
 function showView(name) {
-  for (const view of ["loginView", "loadingView", "screenView", "conflictsView", "extractionView"]) $(view).hidden = view !== name;
+  for (const view of ["loginView", "loadingView", "homeView", "screenView", "conflictsView", "extractionView"]) $(view).hidden = view !== name;
   if (name !== "screenView") $("decideBar").hidden = true;
   if (name !== "extractionView") $("exBar").hidden = true;
 }
@@ -2110,13 +2537,15 @@ async function start() {
   try {
     const user = await (await api(`${API}/user`)).json();
     S.login = String(user.login).toLowerCase();
-    await api(`${API}/repos/${S.repo}`);
+    const repo = await (await api(`${API}/repos/${S.repo}`)).json();
+    S.branch = repo.default_branch || "main";
   } catch (error) {
     showBanner(explain(error), true);
     return showLogin();
   }
   $("logout").hidden = false;
   $("user").textContent = S.login;
+  $("brandLink").href = homeUrl();
 
   try {
     loading("Caricamento delle impostazioni…");
@@ -2127,12 +2556,13 @@ async function start() {
     const formStates = { extraction: extractionState, risk_of_bias: robState };
     S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text", extractionState && "extraction",
       robState && "risk_of_bias"].filter(Boolean);
-    if (!S.stages.length) {
-      showView(null);
-      return showBanner("Lo screening non è ancora stato preparato. Chi coordina deve lanciare \"sysrev screening assign\" e caricare le modifiche su GitHub.", true);
-    }
+    // Without a stage (or with one not started yet) the page opens on the phases of the review.
     const wanted = new URLSearchParams(location.search).get("stage");
-    S.stage = S.stages.includes(wanted) ? wanted : S.stages[S.stages.length - 1];
+    if (!S.stages.includes(wanted)) {
+      return startHome({ title_abstract: titleAbstractState, full_text: fullTextState, extraction: extractionState,
+        risk_of_bias: robState });
+    }
+    S.stage = wanted;
     if (isFormStage()) {
       setupStage();
       return startExtraction(formStates[S.stage].text);
@@ -2192,7 +2622,7 @@ async function start() {
 function setupStage() {
   $("brandName").textContent = isFormStage() ? words().brand : "Screening";
   $("stageLabel").textContent = isFormStage() ? "" : `· ${STAGES[S.stage]}`;
-  $("stageTabs").hidden = S.stages.length < 2;
+  $("stageTabs").hidden = false;
   for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
     button.setAttribute("aria-selected", String(button.dataset.stage === S.stage));
     button.hidden = !S.stages.includes(button.dataset.stage);
@@ -2298,15 +2728,15 @@ $("next").addEventListener("click", () => move(1));
 $("note").addEventListener("change", saveNote);
 $("reason").addEventListener("change", () => { changeReason(); $("reason").blur(); });
 for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
-  button.addEventListener("click", async () => {
-    if (button.dataset.stage === S.stage) return;
-    if (S.dirty.size) await saveNow();
-    if (EX.dirty.size) await exSaveNow();
-    const params = new URLSearchParams(location.search);
-    params.set("stage", button.dataset.stage);
-    location.search = params.toString();
+  button.addEventListener("click", () => {
+    if (button.dataset.stage !== S.stage) navigate(stageUrl(button.dataset.stage));
   });
 }
+$("homeTab").addEventListener("click", () => navigate(homeUrl()));
+$("brandLink").addEventListener("click", (event) => {
+  event.preventDefault();
+  if (S.repo) navigate(homeUrl());
+});
 $("filter").addEventListener("change", () => { S.filter = $("filter").value; S.currentId = null; renderScreen(); });
 $("search").addEventListener("input", () => { S.search = $("search").value; S.currentId = null; renderScreen(); });
 $("helpButton").addEventListener("click", () => { $("help").hidden = !$("help").hidden; });
@@ -2348,6 +2778,7 @@ document.addEventListener("keydown", (event) => {
   S.repo = params.get("repo") || storageGet("sysrev:repo") || "";
   S.token = storageGet("sysrev:token") || "";
   if (params.get("repo")) storageSet("sysrev:repo", S.repo, true);
+  if (S.repo) $("brandLink").href = homeUrl();
   if (S.repo && S.token) start();
   else showLogin();
 })();
