@@ -2499,8 +2499,13 @@ function renderHome(d) {
   const documents = [["protocol/protocol.md", "Protocollo"], ["search/strategy.md", "Strategia di ricerca"],
     ["prisma/prisma.md", "Diagramma PRISMA"], ["guida-revisori.md", "Guida per i revisori"]]
     .filter(([path]) => d.paths.has(path) || !d.treeOk);
+  const automation = d.paths.has(".github/workflows/sysrev.yml")
+    ? el("a", { href: `https://github.com/${S.repo}/actions/workflows/sysrev.yml`, target: "_blank", rel: "noopener",
+      text: "Automazioni (GitHub Actions)" })
+    : null;
   flow.append(el("p", { class: "home-docs" }, el("span", { class: "eyebrow", text: "Documenti" }),
     ...documents.map(([path, label]) => el("a", { href: githubUrl(path), target: "_blank", rel: "noopener", text: label })),
+    automation,
     el("a", { href: `https://github.com/${S.repo}`, target: "_blank", rel: "noopener", text: "Repository su GitHub" })));
 
   $("homeView").replaceChildren(top, flow);
