@@ -441,7 +441,8 @@ const S = {
   decisions: new Map(), decisionsSha: null, dirty: new Set(),
   filter: "todo", search: "", currentId: null,
   closed: false,
-  assignments: new Map(), others: new Map(), consensus: new Map(), consensusSha: null,
+  assignments: new Map(), others: new Map(), consensus: new Map(), consensusSha: null, consensusDirty: new Set(),
+  loadedStatus: "", frozen: false, watchTimer: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -533,7 +534,8 @@ function toCSV(fields, rows) {
 // ---------------------------------------------------------------- GitHub API
 
 class ApiError extends Error {
-  constructor(status, message) { super(message); this.status = status; }
+  // wait: seconds GitHub asks to wait before trying again (a rate limit), 0 otherwise.
+  constructor(status, message, wait = 0) { super(message); this.status = status; this.wait = wait; }
 }
 
 function encodeBase64(text) {
@@ -568,7 +570,15 @@ async function api(url, { method = "GET", accept = "application/vnd.github+json"
   if (!response.ok) {
     let detail = "";
     try { detail = (await response.json()).message || ""; } catch { /* no body */ }
-    throw new ApiError(response.status, detail || `Errore GitHub ${response.status}`);
+    let wait = 0;
+    if (response.status === 403 || response.status === 429) {
+      const retryAfter = Number(response.headers.get("retry-after")) || 0;
+      const reset = Number(response.headers.get("x-ratelimit-reset")) || 0;
+      if (retryAfter > 0) wait = retryAfter;
+      else if (response.headers.get("x-ratelimit-remaining") === "0" && reset) wait = Math.max(60, reset - Date.now() / 1000);
+      else if (/rate limit/i.test(detail)) wait = 60;
+    }
+    throw new ApiError(response.status, detail || `Errore GitHub ${response.status}`, Math.ceil(wait));
   }
   return response;
 }
@@ -599,14 +609,50 @@ async function listDir(path) {
   }
 }
 
+// Every save is a commit, and GitHub allows 500 of them an hour per person: the page makes one at a time, at
+// least WRITE_GAP apart (360 an hour at most), and saves at once only when the page is being left.
+const WRITE_GAP = Number(storageGet("sysrev:writeGap")) || 10000;  // the tests make it shorter
+const writes = { last: 0, chain: Promise.resolve(), hurry: false, wake: null, blockedUntil: 0 };
+
+function paced(task) {
+  const run = writes.chain.then(async () => {
+    // While GitHub asks to wait, do not even try (each try would make the wait longer), unless leaving the page.
+    const blocked = writes.blockedUntil - Date.now();
+    if (blocked > 0 && !writes.hurry) throw new ApiError(429, "rate limit", Math.ceil(blocked / 1000));
+    const wait = writes.last + WRITE_GAP - Date.now();
+    if (wait > 0 && !writes.hurry) await new Promise((resolve) => { writes.wake = resolve; setTimeout(resolve, wait); });
+    writes.wake = null;
+    writes.last = Date.now();
+    try {
+      return await task();
+    } catch (error) {
+      if (error.wait) writes.blockedUntil = Date.now() + error.wait * 1000;
+      throw error;
+    }
+  });
+  writes.chain = run.catch(() => {});
+  return run;
+}
+
+function hurry(on) {
+  writes.hurry = on;
+  if (on && writes.wake) writes.wake();
+}
+
+function retryDelay(error) { return Math.max(30000, (error.wait || 0) * 1000); }
+
 async function writeFile(path, text, sha, message) {
   const body = { message, content: encodeBase64(text) };
   if (sha) body.sha = sha;
-  const result = await (await api(contentsUrl(path), { method: "PUT", body })).json();
+  const result = await paced(async () => (await api(contentsUrl(path), { method: "PUT", body })).json());
   return result.content.sha;
 }
 
 function explain(error) {
+  if (error.wait) {
+    const minutes = Math.max(1, Math.round(error.wait / 60));
+    return `GitHub chiede di rallentare (troppi salvataggi in poco tempo). Riprovo da solo tra ${minutes} ${minutes === 1 ? "minuto" : "minuti"}: puoi continuare a lavorare.`;
+  }
   if (error.status === 401) return "Il token non è valido o è scaduto: esci e inseriscine uno nuovo.";
   if (error.status === 403) return "Il token non ha il permesso di scrittura. Serve un token con \"Contents: Read and write\" su questo repository.";
   if (error.status === 404) return "Repository non trovato, oppure il token non ha accesso a questo repository.";
@@ -637,7 +683,8 @@ function setSaveState(kind, text) {
 }
 
 function refreshSaveState() {
-  if (S.dirty.size) setSaveState("pending", `${S.dirty.size} da salvare…`);
+  const pending = S.dirty.size + S.consensusDirty.size;
+  if (pending) setSaveState("pending", `${pending} da salvare…`);
   else setSaveState("saved", "Tutto salvato");
 }
 
@@ -698,9 +745,9 @@ async function saveNow() {
     persistPending();
     refreshSaveState();
   } catch (error) {
-    setSaveState("error", "Non salvato");
+    setSaveState("error", error.wait ? "In attesa di GitHub" : "Non salvato");
     showBanner(`Salvataggio non riuscito: ${explain(error)} Le decisioni restano in questo browser e verranno salvate appena possibile.`, true);
-    saving.retry = setTimeout(saveNow, 30000);
+    saving.retry = setTimeout(saveNow, retryDelay(error));
   } finally {
     saving.busy = false;
     if (saving.again) { saving.again = false; if (S.dirty.size) saveNow(); }
@@ -708,9 +755,13 @@ async function saveNow() {
 }
 
 window.addEventListener("beforeunload", (event) => {
-  if (unsaved()) { saveEverything(); event.preventDefault(); event.returnValue = ""; }
+  if (unsaved()) { hurry(true); saveEverything(); event.preventDefault(); event.returnValue = ""; }
 });
-document.addEventListener("visibilitychange", () => { if (document.hidden && unsaved()) saveEverything(); });
+document.addEventListener("visibilitychange", () => {
+  hurry(document.hidden);
+  if (document.hidden && unsaved()) saveEverything();
+  if (!document.hidden) watchStage();
+});
 
 // ---------------------------------------------------------------- highlighting
 
@@ -994,14 +1045,14 @@ function renderScreen() {
   const current = S.decisions.get(record.record_id);
   for (const button of document.querySelectorAll(".choice")) {
     button.setAttribute("aria-pressed", String(current?.decision === button.dataset.decision));
-    button.disabled = S.closed;
+    button.disabled = S.closed || S.frozen;
   }
   const note = $("note");
   note.value = current?.note || "";
-  note.disabled = S.closed;
+  note.disabled = S.closed || S.frozen;
   const reason = $("reason");
   reason.value = current?.decision === "exclude" ? current.reason || "" : "";
-  reason.disabled = S.closed;
+  reason.disabled = S.closed || S.frozen;
   reason.classList.remove("missing");
 }
 
@@ -1013,7 +1064,7 @@ function move(step) {
 }
 
 function decide(decision, reason) {
-  if (S.closed || !S.currentId) return;
+  if (S.closed || S.frozen || !S.currentId) return;
   if (decision === "exclude" && isFullText()) {
     reason = reason ?? $("reason").value;
     if (!reason) {
@@ -1117,7 +1168,7 @@ function renderConflicts() {
 function conflictCard(id, outcome, reviewers) {
   const record = S.records.get(id) || { record_id: id, title: id };
   const agreed = S.consensus.get(id);
-  const editable = canDecideConflict(reviewers);
+  const editable = canDecideConflict(reviewers) && !S.frozen;
   const note = el("input", { type: "text", placeholder: "Nota sulla decisione (facoltativa)", value: agreed?.note || "", disabled: !editable });
   const reasonSelect = isFullText() ? reasonPicker(agreed?.decision === "exclude" ? agreed.reason : "", !editable) : null;
   const choose = (decision) => {
@@ -1163,18 +1214,55 @@ function reasonPicker(value, disabled) {
   return select;
 }
 
-async function saveConsensus(recordId, decision, note, reason = "") {
-  const row = { record_id: recordId, decision, reason, note, decided_by: S.login, updated_at: nowIso() };
-  S.consensus.set(recordId, row);
+const consensusSaving = { busy: false, again: false, retry: null };
+function consensusKey() { return `sysrev:consensus:${S.repo}:${S.stage}:${S.login}`; }
+
+function persistConsensus() {
+  const pending = [...S.consensusDirty].map((id) => S.consensus.get(id)).filter(Boolean);
+  try {
+    if (pending.length) localStorage.setItem(consensusKey(), JSON.stringify(pending));
+    else localStorage.removeItem(consensusKey());
+  } catch { /* storage unavailable */ }
+}
+
+function restoreConsensus() {
+  let pending = [];
+  try { pending = JSON.parse(localStorage.getItem(consensusKey()) || "[]"); } catch { pending = []; }
+  for (const row of pending) {
+    const current = S.consensus.get(row?.record_id);
+    if (row && row.record_id && (!current || (row.updated_at || "") > (current.updated_at || ""))) {
+      S.consensus.set(row.record_id, row);
+      S.consensusDirty.add(row.record_id);
+    }
+  }
+  if (S.consensusDirty.size) consensusSaveNow();
+}
+
+function saveConsensus(recordId, decision, note, reason = "") {
+  S.consensus.set(recordId, { record_id: recordId, decision, reason, note, decided_by: S.login, updated_at: nowIso() });
+  S.consensusDirty.add(recordId);
+  persistConsensus();
+  refreshSaveState();
+  renderConflicts();
+  return consensusSaveNow();
+}
+
+async function consensusSaveNow() {
+  clearTimeout(consensusSaving.retry);
+  if (!S.consensusDirty.size) return;
+  if (consensusSaving.busy) { consensusSaving.again = true; return; }
+  consensusSaving.busy = true;
   setSaveState("saving", "Salvataggio…");
+  const sent = new Map([...S.consensusDirty].map((id) => [id, S.consensus.get(id)?.updated_at]));
   try {
     for (let attempt = 0; ; attempt++) {
       const rows = [...S.consensus.values()].sort((a, b) => num(a.record_id) - num(b.record_id));
       try {
         S.consensusSha = await writeFile(`${stageDir()}/consensus.csv`, toCSV(CONSENSUS_FIELDS, rows), S.consensusSha,
-          `Screening ${STAGES[S.stage]}: decisione concordata su ${recordId} (${S.login})`);
+          `Screening ${STAGES[S.stage]}: ${sent.size === 1 ? `decisione concordata su ${[...sent.keys()][0]}` : `${sent.size} decisioni concordate`} (${S.login})`);
         break;
       } catch (error) {
+        // Another reviewer saved an agreed decision meanwhile: merge (the newest wins) and retry.
         if ((error.status === 409 || error.status === 422) && attempt < 3) {
           const remote = await readFile(`${stageDir()}/consensus.csv`);
           S.consensusSha = remote ? remote.sha : null;
@@ -1184,13 +1272,19 @@ async function saveConsensus(recordId, decision, note, reason = "") {
         throw error;
       }
     }
+    for (const [id, stamp] of sent) if (S.consensus.get(id)?.updated_at === stamp) S.consensusDirty.delete(id);
+    persistConsensus();
     refreshSaveState();
     showBanner("");
   } catch (error) {
-    setSaveState("error", "Non salvato");
-    showBanner(`Decisione concordata non salvata: ${explain(error)}`, true);
+    setSaveState("error", error.wait ? "In attesa di GitHub" : "Non salvato");
+    showBanner(`Decisione concordata non salvata: ${explain(error)} Resta in questo browser e verrà salvata appena possibile.`, true);
+    consensusSaving.retry = setTimeout(consensusSaveNow, retryDelay(error));
+  } finally {
+    consensusSaving.busy = false;
+    if (consensusSaving.again) { consensusSaving.again = false; if (S.consensusDirty.size) consensusSaveNow(); }
   }
-  renderConflicts();
+  if (!$("conflictsView").hidden) renderConflicts();
 }
 
 function loadConsensus(text, keepNewer = false) {
@@ -1201,6 +1295,7 @@ function loadConsensus(text, keepNewer = false) {
     const local = S.consensus.get(row.record_id);
     if (keepNewer && local && (local.updated_at || "") >= (row.updated_at || "")) continue;
     S.consensus.set(row.record_id, { ...row, decision });
+    S.consensusDirty.delete(row.record_id);  // a newer decision saved elsewhere replaces ours
   }
 }
 
@@ -1210,7 +1305,7 @@ function loadConsensus(text, keepNewer = false) {
 const EX = {
   state: null, form: { study: [], results: [] }, closed: false,
   mine: [], roles: new Map(), extractors: new Map(), verifiers: new Map(),
-  docs: new Map(), others: new Map(), consensus: new Map(), shas: new Map(), dirty: new Set(),
+  docs: new Map(), others: new Map(), consensus: new Map(), shas: new Map(), base: new Map(), dirty: new Set(),
   current: null, editing: "mine", tab: "mine", selection: "", formBox: null, plain: new Map(),
   tools: {}, toolOf: new Map(),  // risk of bias: the tool (form) of each study
 };
@@ -1484,6 +1579,40 @@ function exTouch(key) {
   exSaving.timer = setTimeout(exSaveNow, 2500);
 }
 
+// A cell as it counts for the merge: nothing when it has neither a value nor a source.
+function cellKey(cell) {
+  return cell && (hasValue(cell) || cell.source) ? JSON.stringify([cell.value, cell.source || ""]) : "";
+}
+const rowsKey = (rows) => JSON.stringify(rows.map((row) => Object.keys(row).sort().map((k) => [k, cellKey(row[k])])));
+
+// Three-way merge of a form saved meanwhile from another tab, computer or reviewer: what changed here since the
+// version this page read (base) wins, everything else comes from the version on GitHub (remote). The rows of the
+// results count as one block. Returns null when nothing changed here.
+function mergeDocs(base, local, remote) {
+  const before = base || { study: {}, results: [], status: "draft", note: "" };
+  const merged = { ...remote, study: { ...remote.study }, results: remote.results };
+  let changed = false;
+  for (const key of new Set([...Object.keys(local.study), ...Object.keys(before.study)])) {
+    if (cellKey(local.study[key]) === cellKey(before.study[key])) continue;
+    changed = true;
+    if (local.study[key]) merged.study[key] = local.study[key];
+    else delete merged.study[key];
+  }
+  const resultsHere = rowsKey(local.results) !== rowsKey(before.results);
+  if (resultsHere) {
+    changed = true;
+    merged.results = local.results;
+    if (rowsKey(remote.results) !== rowsKey(before.results)) merged.resultsClash = true;
+  }
+  for (const key of ["status", "note"]) {
+    if ((local[key] || "") !== (before[key] || "")) { changed = true; merged[key] = local[key]; }
+  }
+  if (!changed) return null;
+  merged.decided_by = local.decided_by || remote.decided_by;
+  merged.updated_at = nowIso();
+  return merged;
+}
+
 async function exSaveNow() {
   clearTimeout(exSaving.timer);
   clearTimeout(exSaving.retry);
@@ -1493,25 +1622,37 @@ async function exSaveNow() {
   setSaveState("saving", "Salvataggio…");
   try {
     for (const key of [...EX.dirty]) {
-      const doc = exDocByKey(key);
-      const stamp = doc.updated_at;
+      const consensus = key.startsWith("consensus:");
+      const target = consensus ? EX.consensus : EX.docs;
+      let doc = exDocByKey(key);
+      let stamp = doc.updated_at;
       const path = exPath(key);
-      const what = key.startsWith("consensus:") ? `valori concordati su ${doc.record_id}` : doc.record_id;
-      let replaced = false;
+      const what = consensus ? `valori concordati su ${doc.record_id}` : doc.record_id;
       for (let attempt = 0; ; attempt++) {
+        const text = serializeDoc(doc);
         try {
-          EX.shas.set(path, await writeFile(path, serializeDoc(doc), EX.shas.get(path), `${words().commit}: ${what} (${S.login})`));
+          EX.shas.set(path, await writeFile(path, text, EX.shas.get(path), `${words().commit}: ${what} (${S.login})`));
+          EX.base.set(path, text);
           break;
         } catch (error) {
-          // Saved meanwhile from another tab or computer: the newest version wins.
+          // Saved meanwhile from another tab, computer or reviewer: merge field by field and retry.
           if ((error.status === 409 || error.status === 422) && attempt < 3) {
             const remote = await readFile(path);
             EX.shas.set(path, remote ? remote.sha : null);
             const remoteDoc = remote && parseDoc(remote.text, doc.record_id, doc.reviewer);
-            if (remoteDoc && remoteDoc.updated_at > doc.updated_at) {
-              (key.startsWith("consensus:") ? EX.consensus : EX.docs).set(doc.record_id, remoteDoc);
-              replaced = true;
-              break;
+            if (remoteDoc) {
+              const base = EX.base.has(path) ? parseDoc(EX.base.get(path), doc.record_id, doc.reviewer) : null;
+              const merged = mergeDocs(base, exDocByKey(key), remoteDoc);
+              EX.base.set(path, remote.text);
+              if (merged?.resultsClash) {
+                delete merged.resultsClash;
+                showBanner(`${doc.record_id}: le righe dei risultati sono state cambiate anche da un'altra parte; restano le tue. Controllale.`, true);
+              }
+              doc = merged || remoteDoc;
+              target.set(doc.record_id, doc);
+              stamp = doc.updated_at;
+              if (EX.current === doc.record_id) rerenderForm();
+              if (!merged) break;  // nothing changed here: the version on GitHub is already the right one
             }
             continue;
           }
@@ -1519,15 +1660,14 @@ async function exSaveNow() {
         }
       }
       // Still dirty only if it changed while it was being saved.
-      if (replaced || exDocByKey(key).updated_at === stamp) EX.dirty.delete(key);
-      if (replaced && EX.current === doc.record_id) rerenderForm();
+      if (exDocByKey(key).updated_at === stamp) EX.dirty.delete(key);
     }
     exPersist();
     exRefreshSaveState();
   } catch (error) {
-    setSaveState("error", "Non salvato");
+    setSaveState("error", error.wait ? "In attesa di GitHub" : "Non salvato");
     showBanner(`Salvataggio non riuscito: ${explain(error)} Le schede restano in questo browser e verranno salvate appena possibile.`, true);
-    exSaving.retry = setTimeout(exSaveNow, 30000);
+    exSaving.retry = setTimeout(exSaveNow, retryDelay(error));
   } finally {
     exSaving.busy = false;
     if (exSaving.again) { exSaving.again = false; if (EX.dirty.size) exSaveNow(); }
@@ -1546,7 +1686,7 @@ async function loadDocs(reviewer, ids, target, keepSha) {
     const doc = file && parseDoc(file.text, id, reviewer);
     if (!doc) return;
     target.set(id, doc);
-    if (keepSha) EX.shas.set(path, file.sha);
+    if (keepSha) { EX.shas.set(path, file.sha); EX.base.set(path, file.text); }
   });
 }
 
@@ -1605,7 +1745,7 @@ async function startExtraction(stateText) {
         const file = await readFile(f.path);
         const id = f.name.slice(0, -5);
         const doc = file && parseDoc(file.text, id, "");
-        if (doc) { EX.consensus.set(id, doc); EX.shas.set(f.path, file.sha); }
+        if (doc) { EX.consensus.set(id, doc); EX.shas.set(f.path, file.sha); EX.base.set(f.path, file.text); }
       });
     }
     for (const [reviewer, ids] of toRead) {
@@ -1629,6 +1769,7 @@ async function startExtraction(stateText) {
       : `${words().the} è chiusa: le schede non si possono più cambiare.`);
   } else showBanner("");
   $("exTabs").hidden = !canCompare;
+  watchFrom(EX.state.status);
   EX.tab = EX.mine.length ? "mine" : "compare";
   showView("extractionView");
   exShowList();
@@ -1766,7 +1907,7 @@ function exContext(id) {
   useForm(id);
   if (EX.editing === "consensus") {
     if (!EX.consensus.has(id)) EX.consensus.set(id, buildConsensus(id));
-    const editable = EX.closed && (EX.state.conflicts !== "third_reviewer" || S.login === EX.state.arbiter);
+    const editable = EX.closed && !S.frozen && (EX.state.conflicts !== "third_reviewer" || S.login === EX.state.arbiter);
     return { mode: "consensus", key: `consensus:${id}`, doc: EX.consensus.get(id), others: doneDocs(id), editable };
   }
   const role = EX.roles.get(id);
@@ -1782,11 +1923,11 @@ function exContext(id) {
       EX.docs.set(id, doc);
     }
     const ai = aiExtractor(id) === extractor ? extractor : "";
-    return { mode: "verify", key: `mine:${id}`, doc: EX.docs.get(id), others: { [extractor]: source }, editable: !EX.closed,
+    return { mode: "verify", key: `mine:${id}`, doc: EX.docs.get(id), others: { [extractor]: source }, editable: !EX.closed && !S.frozen,
       ai, aiText: ai ? EX.plain.get(id) ?? null : null };
   }
   if (!EX.docs.has(id)) EX.docs.set(id, newDoc(id, "extractor"));
-  return { mode: "extract", key: `mine:${id}`, doc: EX.docs.get(id), others: null, editable: !EX.closed };
+  return { mode: "extract", key: `mine:${id}`, doc: EX.docs.get(id), others: null, editable: !EX.closed && !S.frozen };
 }
 
 function rerenderForm() {
@@ -2523,6 +2664,39 @@ async function startHome(stateFiles) {
   }
 }
 
+// ---------------------------------------------------------------- the stage changes while the page is open
+
+// Every two minutes (and when the page comes back into view) the page reads the state of its stage: once it has
+// been closed, what was decided so far is saved and no more decisions are taken.
+const WATCH_EVERY = 120000;
+
+function watchFrom(status) {
+  S.loadedStatus = status || "open";
+  clearInterval(S.watchTimer);
+  S.watchTimer = setInterval(watchStage, WATCH_EVERY);
+}
+
+async function watchStage() {
+  if (!S.loadedStatus || S.frozen) return;
+  const folder = isFormStage() ? S.stage : stageDir();
+  let status;
+  try {
+    const file = await readFile(`${folder}/state.json`);
+    if (!file) return;
+    status = JSON.parse(file.text).status || "open";
+  } catch { return; }  // offline or not readable: next time
+  if (status === S.loadedStatus) return;
+  S.frozen = true;
+  clearInterval(S.watchTimer);
+  saveEverything();  // decided before the page knew: kept
+  showBanner(status === "closed"
+    ? "Chi coordina ha chiuso questa fase: quello che hai fatto finora è salvato, ma non si possono prendere altre decisioni. Ricarica la pagina."
+    : "Chi coordina ha riaperto questa fase: ricarica la pagina per continuare.", true);
+  if (!$("screenView").hidden) renderScreen();
+  if (!$("conflictsView").hidden) renderConflicts();
+  if (EX.current) rerenderForm();
+}
+
 // ---------------------------------------------------------------- loading
 
 function showView(name) {
@@ -2531,8 +2705,12 @@ function showView(name) {
   if (name !== "extractionView") $("exBar").hidden = true;
 }
 
-const unsaved = () => S.dirty.size + EX.dirty.size;
-function saveEverything() { if (S.dirty.size) saveNow(); if (EX.dirty.size) exSaveNow(); }
+const unsaved = () => S.dirty.size + EX.dirty.size + S.consensusDirty.size;
+function saveEverything() {
+  if (S.dirty.size) saveNow();
+  if (EX.dirty.size) exSaveNow();
+  if (S.consensusDirty.size) consensusSaveNow();
+}
 
 function loading(text) { $("loadingText").textContent = text; showView("loadingView"); }
 
@@ -2620,6 +2798,7 @@ async function start() {
     $("filter").value = "all";
     await loadClosed();
   } else showBanner("");
+  watchFrom(S.state.status);
   $("tabs").hidden = !S.closed || S.state.conflicts === "include_if_any";
   selectTab("screen");
 }
@@ -2671,6 +2850,7 @@ async function loadClosed() {
   S.consensus = new Map();
   S.consensusSha = consensus ? consensus.sha : null;
   if (consensus) loadConsensus(consensus.text);
+  restoreConsensus();
   $("onlyMine").checked = S.state.conflicts !== "third_reviewer" || S.login !== S.state.arbiter;
   showBanner("Lo screening è chiuso: le decisioni non si possono più cambiare. Nella scheda Conflitti trovi i record su cui i revisori non erano d'accordo.");
 }
