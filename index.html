@@ -2498,7 +2498,8 @@ function buildPhases(d) {
 
   const titleAbstract = d.states.title_abstract;
   const sought = tally(csv("screening/title_abstract/results.csv")).include;
-  const unavailable = csv("fulltext/unavailable.csv").length;
+  // A full text found after being marked unavailable counts as available (as in sysrev prisma).
+  const unavailable = csv("fulltext/unavailable.csv").filter((r) => !d.fulltexts.has(r.record_id)).length;
   const available = d.fulltexts.size;
   const retrievalOpen = titleAbstract?.status === "closed" && !d.states.full_text;
   phases.push({
