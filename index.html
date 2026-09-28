@@ -503,18 +503,29 @@ function parseCSV(text) {
   const newline = text.indexOf("\n");
   const firstLine = newline === -1 ? text : text.slice(0, newline);
   const delimiter = firstLine.split(";").length > firstLine.split(",").length ? ";" : ",";
+  // Copies whole runs of characters, not one at a time: records.csv can be tens of megabytes.
+  const special = new RegExp(`["${delimiter}\\n]`, "g");
   const rows = [];
-  let row = [], field = "", quoted = false;
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i];
-    if (quoted) {
-      if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; } else quoted = false;
-      } else field += c;
-    } else if (c === '"') quoted = true;
-    else if (c === delimiter) { row.push(field); field = ""; }
-    else if (c === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
-    else if (c !== "\r") field += c;
+  let row = [], field = "", i = 0;
+  while (i < text.length) {
+    special.lastIndex = i;
+    const match = special.exec(text);
+    const end = match ? match.index : text.length;
+    if (end > i) field += text.slice(i, end).replace(/\r/g, "");
+    if (!match) break;
+    i = end + 1;
+    if (match[0] === '"') {
+      for (;;) {  // quoted: up to the closing quote, "" being a quote
+        const close = text.indexOf('"', i);
+        if (close === -1) { field += text.slice(i); i = text.length; break; }
+        field += text.slice(i, close);
+        i = close + 1;
+        if (text[i] !== '"') break;
+        field += '"';
+        i++;
+      }
+    } else if (match[0] === delimiter) { row.push(field); field = ""; }
+    else { row.push(field); rows.push(row); row = []; field = ""; }
   }
   if (field !== "" || row.length) { row.push(field); rows.push(row); }
   const header = (rows.shift() || []).map((h) => h.trim());
@@ -595,8 +606,59 @@ async function readFile(path) {
   let text;
   if (meta.encoding === "base64" && meta.content) text = decodeBase64(meta.content);
   else if (meta.size === 0) text = "";
-  else text = await (await api(contentsUrl(path), { accept: "application/vnd.github.raw+json" })).text();
+  else {
+    text = await readCopy(path, meta.sha);
+    if (text === null) {
+      text = await (await api(contentsUrl(path), { accept: "application/vnd.github.raw+json" })).text();
+      writeCopy(path, meta.sha, text);
+    }
+  }
   return { text, sha: meta.sha };
+}
+
+// Files over 1 MB (records.csv of a large search is tens of megabytes) need a second, slow download. With
+// "Ricorda su questo computer" the page keeps them in the browser under their Git SHA and downloads them again
+// only when they change; "Esci" deletes them.
+const COPIES_DB = "sysrev:files";
+const keepCopies = () => { try { return !!localStorage.getItem("sysrev:token"); } catch { return false; } };
+
+function copies(mode, action) {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open(COPIES_DB, 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("files");
+    open.onerror = () => reject(open.error);
+    open.onblocked = () => reject(new Error("blocked"));
+    open.onsuccess = () => {
+      const db = open.result;
+      try {
+        const tx = db.transaction("files", mode);
+        const request = action(tx.objectStore("files"));
+        tx.oncomplete = () => { db.close(); resolve(request.result); };
+        tx.onerror = tx.onabort = () => { db.close(); reject(tx.error); };
+      } catch (error) { db.close(); reject(error); }
+    };
+  });
+}
+
+async function readCopy(path, sha) {
+  if (!keepCopies()) return null;
+  try {
+    const copy = await copies("readonly", (store) => store.get(`${S.repo}:${path}`));
+    return copy && copy.sha === sha && typeof copy.text === "string" ? copy.text : null;
+  } catch { return null; }  // no IndexedDB (private window, full disk): download
+}
+
+function writeCopy(path, sha, text) {
+  if (keepCopies()) copies("readwrite", (store) => store.put({ sha, text }, `${S.repo}:${path}`)).catch(() => {});
+}
+
+function deleteCopies() {
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.deleteDatabase(COPIES_DB);
+      request.onsuccess = request.onerror = request.onblocked = () => resolve();
+    } catch { resolve(); }
+  });
 }
 
 async function listDir(path) {
@@ -2719,9 +2781,9 @@ async function start() {
   showBanner("");
   loading("Accesso a GitHub…");
   try {
-    const user = await (await api(`${API}/user`)).json();
+    const [user, repo] = await Promise.all([`${API}/user`, `${API}/repos/${S.repo}`]
+      .map(async (url) => (await api(url)).json()));
     S.login = String(user.login).toLowerCase();
-    const repo = await (await api(`${API}/repos/${S.repo}`)).json();
     S.branch = repo.default_branch || "main";
   } catch (error) {
     showBanner(explain(error), true);
@@ -2760,12 +2822,12 @@ async function start() {
     highlighter = buildHighlighter(S.state.highlight);
 
     loading("Caricamento dei record…");
-    const [recordsFile, assignmentsFile, decisionsFile] = await Promise.all([
+    // At full text, also which full texts are in the repository (a folder listing shows up to 1000 files).
+    const [recordsFile, assignmentsFile, decisionsFile, mdList, pdfList] = await Promise.all([
       readFile(RECORDS_PATH), readFile(`${stageDir()}/assignments.csv`), readFile(decisionsPath()),
+      isFullText() ? listDir("fulltext/md") : [], isFullText() ? listDir("fulltext/pdf") : [],
     ]);
     if (isFullText()) {
-      // Which full texts are in the repository (a folder listing shows up to 1000 files).
-      const [mdList, pdfList] = await Promise.all([listDir("fulltext/md"), listDir("fulltext/pdf")]);
       S.mdFiles = new Set(mdList.filter((f) => f.name.endsWith(".md")).map((f) => f.name.slice(0, -3)));
       S.pdfFiles = new Set(pdfList.filter((f) => f.name.endsWith(".pdf")).map((f) => f.name.slice(0, -4)));
     }
@@ -2895,6 +2957,7 @@ $("loginForm").addEventListener("submit", (event) => {
   const remember = $("rememberInput").checked;
   storageSet("sysrev:repo", S.repo, true);
   storageSet("sysrev:token", S.token, remember);
+  if (!remember) deleteCopies();
   start();
 });
 
@@ -2903,7 +2966,7 @@ $("repoInput").addEventListener("input", updateGuideLink);
 $("logout").addEventListener("click", () => {
   if (unsaved() && !confirm("Ci sono modifiche non ancora salvate su GitHub. Uscire comunque? Resteranno in questo browser.")) return;
   storageRemove("sysrev:token");
-  location.reload();
+  deleteCopies().then(() => location.reload());
 });
 
 for (const button of document.querySelectorAll(".choice[data-decision]")) {

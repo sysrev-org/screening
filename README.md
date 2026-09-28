@@ -11,7 +11,9 @@ con `&stage=title_abstract`, `full_text`, `extraction` o `risk_of_bias` si apre 
 
 Solo la pagina (`index.html`): **nessun dato**. Record, decisioni e protocolli restano nei repository
 privati delle review. La pagina li legge e li scrive direttamente dal browser, con il token GitHub di
-chi la usa: il token resta nel browser e viene inviato soltanto a `api.github.com`.
+chi la usa: il token resta nel browser e viene inviato soltanto a `api.github.com`. Con "Ricorda su questo
+computer" la pagina tiene nel browser anche una copia dei file più grandi (come l'elenco dei record), per
+aprirsi più in fretta; "Esci" la cancella.
 
 Le istruzioni per i revisori sono nel file `guida-revisori.md` del repository di ciascuna review.
 
