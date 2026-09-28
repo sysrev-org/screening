@@ -671,6 +671,48 @@ async function listDir(path) {
   }
 }
 
+// Many small files (a form stage has one per study and reviewer) with one GraphQL request for every 100, instead
+// of one request each. Gives each path its { text, sha }, or null when the file is not there. Without GraphQL,
+// a listing of each folder says which files are there; those, and the ones too big for GraphQL, are read one
+// at a time.
+const FILES_PER_QUERY = 100;
+let graphqlWorks = true;
+async function readFiles(paths) {
+  const files = new Map(), unknown = [];
+  const [owner, name] = S.repo.split("/");
+  for (let i = 0; i < paths.length; i += FILES_PER_QUERY) {
+    const chunk = paths.slice(i, i + FILES_PER_QUERY);
+    if (!graphqlWorks) { unknown.push(...chunk); continue; }
+    const fields = chunk.map((path, j) => `f${j}: object(expression: ${JSON.stringify(`${S.branch}:${path}`)}) `
+      + "{ ... on Blob { oid text isTruncated } }").join("\n");
+    try {
+      const response = await api(`${API}/graphql`, { method: "POST", body: {
+        query: `query($owner: String!, $name: String!) { repository(owner: $owner, name: $name) {\n${fields}\n} }`,
+        variables: { owner, name },
+      } });
+      const { data, errors } = await response.json();
+      if (errors || !data || !data.repository) throw new Error("GraphQL");
+      chunk.forEach((path, j) => {
+        const blob = data.repository[`f${j}`];
+        if (blob === null) files.set(path, null);
+        else if (blob && typeof blob.text === "string" && !blob.isTruncated) {
+          files.set(path, { text: blob.text.replace(/^\ufeff/, ""), sha: blob.oid });
+        }
+      });
+    } catch (error) {
+      if (error.status === 401) throw error;
+      graphqlWorks = false;
+      unknown.push(...chunk);
+    }
+  }
+  const folderOf = (path) => path.slice(0, path.lastIndexOf("/"));
+  const listed = new Map(await Promise.all([...new Set(unknown.map(folderOf))]
+    .map(async (folder) => [folder, new Set((await listDir(folder)).map((f) => f.path))])));
+  for (const path of unknown) if (!listed.get(folderOf(path)).has(path)) files.set(path, null);
+  await inBatches(paths.filter((path) => !files.has(path)), async (path) => { files.set(path, await readFile(path)); });
+  return files;
+}
+
 // Every save is a commit, and GitHub allows 500 of them an hour per person: the page makes one at a time, at
 // least WRITE_GAP apart (360 an hour at most), and saves at once only when the page is being left.
 const WRITE_GAP = Number(storageGet("sysrev:writeGap")) || 10000;  // the tests make it shorter
@@ -1741,15 +1783,16 @@ async function inBatches(items, task, size = 6) {
 }
 
 async function loadDocs(reviewer, ids, target, keepSha) {
-  const present = new Set((await listDir(`${S.stage}/data/${reviewer}`)).map((f) => f.name));
-  await inBatches(ids.filter((id) => present.has(`${id}.json`)), async (id) => {
-    const path = `${S.stage}/data/${reviewer}/${id}.json`;
-    const file = await readFile(path);
+  const pathOf = (id) => `${S.stage}/data/${reviewer}/${id}.json`;
+  const files = await readFiles(ids.map(pathOf));
+  for (const id of ids) {
+    const path = pathOf(id);
+    const file = files.get(path);
     const doc = file && parseDoc(file.text, id, reviewer);
-    if (!doc) return;
+    if (!doc) continue;
     target.set(id, doc);
     if (keepSha) { EX.shas.set(path, file.sha); EX.base.set(path, file.text); }
-  });
+  }
 }
 
 // --- loading
@@ -1789,7 +1832,6 @@ async function startExtraction(stateText) {
     EX.mine = [...EX.roles.keys()].sort((a, b) => num(a) - num(b));
 
     loading("Caricamento delle schede…");
-    await loadDocs(S.login, EX.mine, EX.docs, true);
     const toRead = new Map();  // reviewer -> studies whose data this page may show
     const want = (reviewer, id) => {
       if (reviewer === S.login) return;
@@ -1799,21 +1841,22 @@ async function startExtraction(stateText) {
     for (const [id, role] of EX.roles) {
       if (role === "verifier") for (const reviewer of EX.extractors.get(id) || []) want(reviewer, id);
     }
-    if (EX.closed && isDouble()) {
-      // Closed: everyone's data can be compared.
-      for (const [id, reviewers] of EX.extractors) for (const reviewer of reviewers) want(reviewer, id);
-      const consensus = (await listDir(`${S.stage}/consensus`)).filter((f) => f.name.endsWith(".json"));
-      await inBatches(consensus, async (f) => {
-        const file = await readFile(f.path);
-        const id = f.name.slice(0, -5);
+    const readConsensus = async () => {
+      const paths = (await listDir(`${S.stage}/consensus`)).filter((f) => f.name.endsWith(".json")).map((f) => f.path);
+      for (const [path, file] of await readFiles(paths)) {
+        const id = path.split("/").pop().slice(0, -5);
         const doc = file && parseDoc(file.text, id, "");
-        if (doc) { EX.consensus.set(id, doc); EX.shas.set(f.path, file.sha); EX.base.set(f.path, file.text); }
-      });
-    }
-    for (const [reviewer, ids] of toRead) {
-      if (!EX.others.has(reviewer)) EX.others.set(reviewer, new Map());
-      await loadDocs(reviewer, [...new Set(ids)], EX.others.get(reviewer), false);
-    }
+        if (doc) { EX.consensus.set(id, doc); EX.shas.set(path, file.sha); EX.base.set(path, file.text); }
+      }
+    };
+    // Closed: everyone's data can be compared.
+    if (EX.closed && isDouble()) for (const [id, reviewers] of EX.extractors) for (const reviewer of reviewers) want(reviewer, id);
+    for (const reviewer of toRead.keys()) if (!EX.others.has(reviewer)) EX.others.set(reviewer, new Map());
+    await Promise.all([
+      loadDocs(S.login, EX.mine, EX.docs, true),
+      EX.closed && isDouble() ? readConsensus() : null,
+      ...[...toRead].map(([reviewer, ids]) => loadDocs(reviewer, [...new Set(ids)], EX.others.get(reviewer), false)),
+    ]);
     exRestore();
   } catch (error) {
     showView(null);
@@ -2489,11 +2532,10 @@ async function homeData(stateFiles) {
       const folder = `${stage}/data/${S.login}`;
       let paths = [...d.paths].filter((p) => p.startsWith(`${folder}/`) && p.endsWith(".json"));
       if (!d.treeOk) paths = (await listDir(folder)).map((f) => f.path).filter((p) => p.endsWith(".json"));
-      await inBatches(paths.filter((p) => mine.has(p.split("/").pop().slice(0, -5))), async (path) => {
-        const file = await readFile(path);
+      for (const file of (await readFiles(paths.filter((p) => mine.has(p.split("/").pop().slice(0, -5))))).values()) {
         const doc = file && parseDoc(file.text, "", S.login);
         if (doc && doc.status === "done") done++;
-      });
+      }
     }
     d.mine[stage] = { all, total: mine.size, done, unit: ["scheda", "schede"], verb: "completato" };
   }
