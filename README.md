@@ -9,7 +9,8 @@ con `&stage=title_abstract`, `full_text`, `extraction` o `risk_of_bias` si apre 
 
 ## Cosa contiene
 
-Solo la pagina (`index.html`): **nessun dato**. Record, decisioni e protocolli restano nei repository
+Solo la pagina (`index.html`) e i suoi font (`fonts/`: Source Serif 4 e Source Sans 3 di Adobe, licenza SIL Open
+Font License, testo in `fonts/LICENSE-*.md`): **nessun dato**. Record, decisioni e protocolli restano nei repository
 privati delle review. La pagina li legge e li scrive direttamente dal browser, con il token GitHub di
 chi la usa: il token resta nel browser e viene inviato soltanto a `api.github.com`. Con "Ricorda su questo
 computer" la pagina tiene nel browser anche una copia dei file più grandi (come l'elenco dei record), per

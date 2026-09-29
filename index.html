@@ -3,303 +3,589 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Screening, estrazione dei dati e rischio di bias delle systematic review di sysrev.">
 <title>Screening · sysrev</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2314566e'/%3E%3Cpath transform='translate(6 6) scale(.078)' fill='%23fff' d='M204,136a12,12,0,0,1-12,12H64a12,12,0,0,1,0-24H192A12,12,0,0,1,204,136Zm28-60H24a12,12,0,0,0,0,24H232a12,12,0,0,0,0-24Zm-80,96H104a12,12,0,0,0,0,24h48a12,12,0,0,0,0-24Z'/%3E%3C/svg%3E">
 <style>
+/* Fonts: Source Serif 4 (titles and reading) and Source Sans 3 (interface), by Adobe, SIL Open Font License
+   (fonts/LICENSE-*.md). Served with the page: no request to other sites. */
+@font-face { font-family: "Source Serif"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-serif-4-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Source Serif"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-serif-4-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Source Serif"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-serif-4-greek.woff2) format("woff2");
+  unicode-range: U+0370-0377, U+037A-037F, U+0384-038A, U+038C, U+038E-03A1, U+03A3-03FF; }
+@font-face { font-family: "Source Serif"; font-style: italic; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-serif-4-latin-italic.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Source Sans"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-sans-3-latin.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Source Sans"; font-style: normal; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-sans-3-latin-ext.woff2) format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Source Sans"; font-style: italic; font-weight: 200 900; font-display: swap;
+  src: url(fonts/source-sans-3-latin-italic.woff2) format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+
+/* Design tokens. One accent (petrol blue) for what can be clicked; green, amber and red only for decisions and
+   states; the same shapes everywhere: controls 8px, panels 12px, labels 6px. */
 :root {
-  --bg: #f5f6f8; --card: #ffffff; --text: #1c232b; --muted: #5d6977; --border: #dbe0e6;
-  --accent: #2c59d0; --accent-text: #ffffff;
-  --include: #17744a; --include-bg: #e2f4ea;
-  --maybe: #8a5d00; --maybe-bg: #fff2cf;
-  --exclude: #b1261d; --exclude-bg: #fbe3e0;
-  --hl-include: #bfeccf; --hl-exclude: #f8cbc6; --banner: #fff2cf; --error: #fbe3e0; --changed-bg: #e3ecff;
+  color-scheme: light;
+  --bg: #f3f4f4; --surface: #fdfdfd; --sunken: #eef0f1; --raised: #ffffff;
+  --text: #141d24; --text-2: #34414b; --muted: #5a6670; --faint: #8a939b;
+  --border: #e0e4e7; --border-strong: #c7cdd2;
+  --accent: #14566e; --accent-hover: #0e4659; --accent-soft: #e4eef1; --accent-line: #b9d2da; --accent-text: #ffffff;
+  --include: #1d6b47; --include-bg: #e3f1e9;
+  --maybe: #875800; --maybe-bg: #fbefd6;
+  --exclude: #a2342b; --exclude-bg: #f8e4e1;
+  --hl-include: #cbe9d6; --hl-exclude: #f5d0ca; --banner: #e9f1f3; --error: #f8e4e1; --changed-bg: #e2ecf5;
+  --shadow-sm: 0 1px 2px rgb(16 38 48 / .06);
+  --shadow: 0 1px 2px rgb(16 38 48 / .05), 0 8px 24px rgb(16 38 48 / .07);
+  --shadow-up: 0 -1px 0 var(--border), 0 -8px 24px rgb(16 38 48 / .06);
+  --r-sm: 6px; --r: 8px; --r-lg: 12px;
+  --serif: "Source Serif", "Iowan Old Style", Charter, Georgia, serif;
+  --sans: "Source Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --page: 1120px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #13171c; --card: #1c232b; --text: #e6eaef; --muted: #9ba7b5; --border: #2d3641;
-    --accent: #7fa2ff; --accent-text: #0d1117;
-    --include: #6fd39c; --include-bg: #16352a;
-    --maybe: #f0c24d; --maybe-bg: #3a2f12;
-    --exclude: #ff8b81; --exclude-bg: #3d1c1a;
-    --hl-include: #1d5436; --hl-exclude: #6a2520; --banner: #3a2f12; --error: #3d1c1a; --changed-bg: #1f2c4a;
+    color-scheme: dark;
+    --bg: #0d1215; --surface: #141a1e; --sunken: #1a2126; --raised: #182025;
+    --text: #e5eaed; --text-2: #c4cdd3; --muted: #99a5ad; --faint: #6c7880;
+    --border: #232c32; --border-strong: #34404a;
+    --accent: #7dc1d8; --accent-hover: #a0d4e6; --accent-soft: #15303a; --accent-line: #2c5563; --accent-text: #052230;
+    --include: #72c89a; --include-bg: #13301f;
+    --maybe: #e6bc58; --maybe-bg: #33280e;
+    --exclude: #f0918a; --exclude-bg: #3a1a17;
+    --hl-include: #1e4a32; --hl-exclude: #5b2520; --banner: #15282f; --error: #3a1a17; --changed-bg: #172a3c;
+    --shadow-sm: 0 1px 2px rgb(0 0 0 / .3);
+    --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .28);
+    --shadow-up: 0 -1px 0 var(--border), 0 -8px 24px rgb(0 0 0 / .3);
   }
 }
+
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text);
-  font: 16px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.5 var(--sans);
+  -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
 button, input, select, textarea { font: inherit; color: inherit; }
-a { color: var(--accent); }
+a { color: var(--accent); text-underline-offset: .18em; text-decoration-thickness: 1px; }
+a:hover { color: var(--accent-hover); }
 [hidden] { display: none !important; }
-
-header { background: var(--card); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 10; }
-.bar { max-width: 900px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-.brand { font-weight: 700; }
-.review-title { color: var(--muted); flex: 1 1 200px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.user { color: var(--muted); font-size: 14px; }
-.save { font-size: 14px; padding: 2px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); }
-.save.error { background: var(--error); color: var(--exclude); }
-.progress { height: 4px; background: var(--border); }
-.progress > div { height: 100%; background: var(--accent); width: 0; transition: width .3s; }
-
-main { max-width: 900px; margin: 0 auto; padding: 16px 16px 120px; }
-.banner { background: var(--banner); border-radius: 8px; padding: 10px 14px; margin-bottom: 14px; }
-.banner.error { background: var(--error); }
-.card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 20px; margin-bottom: 14px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+svg.icon { width: 1.15em; height: 1.15em; flex: none; fill: currentColor; vertical-align: -.2em; }
 .muted { color: var(--muted); }
 .small { font-size: 14px; }
+.skip { position: absolute; left: 12px; top: -48px; z-index: 30; padding: 8px 14px; border-radius: var(--r);
+  background: var(--accent); color: var(--accent-text); }
+.skip:focus { top: 12px; }
 
-.btn { border: 1px solid var(--border); background: var(--card); border-radius: 8px; padding: 8px 14px; cursor: pointer; }
-.btn:hover { border-color: var(--accent); }
-.btn:disabled { opacity: .45; cursor: default; }
-.btn.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
-.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
-.tab { border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-.tab[aria-selected="true"] { background: var(--accent); color: var(--accent-text); border-color: var(--accent); }
+/* header: the review, the phases, how far along I am */
+header { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--border); }
+.bar { max-width: var(--page); margin: 0 auto; padding: 0 24px; display: flex; gap: 14px; align-items: center; }
+.top-row { min-height: 58px; }
+.brand { display: inline-flex; gap: 9px; align-items: center; color: var(--text); text-decoration: none; flex: none; }
+.brand:hover { color: var(--text); }
+.brand-mark { display: inline-flex; width: 28px; height: 28px; border-radius: 7px; background: var(--accent);
+  color: var(--accent-text); align-items: center; justify-content: center; }
+.brand-mark .icon { width: 17px; height: 17px; }
+#brandName { font: 600 19px/1 var(--serif); letter-spacing: -.01em; }
+.review-title { min-width: 0; flex: 1 1 auto; padding-left: 14px; border-left: 1px solid var(--border);
+  color: var(--muted); font-size: 15px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-title:empty { border: 0; }
+.save { display: inline-flex; gap: 6px; align-items: center; flex: none; font-size: 13.5px; color: var(--muted); }
+.save::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--include); }
+.save.pending::before { background: var(--maybe); }
+.save.error { color: var(--exclude); font-weight: 600; }
+.save.error::before { background: var(--exclude); }
+.user { flex: none; color: var(--text-2); font-size: 14px; font-weight: 500; }
+.user:empty { display: none; }
+.stage-nav .bar { gap: 2px; min-height: 44px; align-items: stretch; overflow-x: auto; scrollbar-width: none; }
+.stage-nav .bar::-webkit-scrollbar { display: none; }
+.stage-link { position: relative; flex: none; display: inline-flex; gap: 7px; align-items: center; border: 0; background: none;
+  padding: 0 12px; color: var(--muted); font-size: 15px; font-weight: 500; cursor: pointer; white-space: nowrap;
+  transition: color .16s var(--ease); }
+.stage-link:first-child { margin-left: -12px; }
+.stage-link:hover { color: var(--text); }
+.stage-link[aria-current="page"] { color: var(--text); font-weight: 600; }
+.stage-link[aria-current="page"]::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px;
+  border-radius: 2px 2px 0 0; background: var(--accent); }
+.stage-nav .spacer { flex: 1 1 16px; }
+.my-progress { flex: none; align-self: center; display: inline-flex; gap: 10px; align-items: center; color: var(--muted);
+  font-size: 14px; font-variant-numeric: tabular-nums; }
+.my-progress:empty { display: none; }
+.progress { height: 3px; background: transparent; }
+.progress > div { height: 100%; width: 0; background: var(--accent); transition: width .4s var(--ease); }
 
-.toolbar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
-.toolbar input[type=search] { flex: 1 1 180px; min-width: 0; }
+main { max-width: var(--page); margin: 0 auto; padding: 24px 24px 140px; }
+body.wide { --page: 1500px; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; margin-bottom: 16px;
+  box-shadow: var(--shadow-sm); }
+.banner { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 16px; padding: 12px 16px; border-radius: var(--r);
+  background: var(--banner); border-left: 3px solid var(--accent); color: var(--text); }
+.banner.error { background: var(--error); border-left-color: var(--exclude); }
+
+/* controls */
+.btn { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-height: 40px; padding: 8px 16px;
+  border: 1px solid var(--border-strong); border-radius: var(--r); background: var(--raised); color: var(--text);
+  font-weight: 600; font-size: 15px; line-height: 1.2; text-decoration: none; cursor: pointer; white-space: nowrap;
+  transition: background-color .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease), transform .08s; }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .4; cursor: default; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); }
+.btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); color: var(--accent-text); }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--muted); }
+.btn.ghost:hover { background: var(--sunken); color: var(--text); }
+.btn.small { min-height: 32px; padding: 5px 11px; font-size: 14px; }
+.btn.icon { min-height: 34px; padding: 6px 10px; gap: 6px; font-size: 13.5px; font-weight: 600; color: var(--muted); }
+.btn.icon:hover { color: var(--accent); }
 input[type=text], input[type=password], input[type=search], select, textarea {
-  background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
-.position { color: var(--muted); font-size: 14px; }
+  min-height: 40px; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: var(--r);
+  background: var(--raised); color: var(--text); transition: border-color .16s var(--ease), box-shadow .16s var(--ease); }
+textarea { line-height: 1.5; }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+input:disabled, select:disabled, textarea:disabled { background: var(--sunken); color: var(--text-2); }
+input[type=checkbox] { width: 17px; height: 17px; accent-color: var(--accent); vertical-align: -3px; }
+.tabs { display: inline-flex; gap: 2px; margin-bottom: 16px; padding: 3px; border-radius: 10px; background: var(--sunken);
+  flex-wrap: wrap; }
+.tab { border: 0; border-radius: 7px; background: transparent; padding: 6px 14px; color: var(--muted); font-weight: 600;
+  font-size: 14.5px; cursor: pointer; transition: background-color .16s var(--ease), color .16s var(--ease); }
+.tab:hover { color: var(--text); }
+.tab[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: var(--shadow-sm); }
+.toolbar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 16px; }
+.toolbar .spacer { flex: 1 1 0; }
+.search { position: relative; flex: 1 1 260px; min-width: 0; display: flex; }
+.search .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+.search input { flex: 1 1 auto; min-width: 0; padding-left: 38px; }
+.position { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+kbd { display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid var(--border-strong); border-bottom-width: 2px;
+  border-radius: 5px; background: var(--raised); color: var(--text-2); font: 600 12px/18px var(--sans); text-align: center; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: var(--r-sm); background: var(--sunken); color: var(--muted);
+  font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+.help { font-size: 14.5px; }
+.keys { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 0 0 8px; padding: 0; list-style: none; }
+.keys li { display: inline-flex; gap: 6px; align-items: center; }
 
-.record-meta { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 6px; }
-.badge { font-size: 12px; padding: 1px 8px; border-radius: 999px; background: var(--bg); border: 1px solid var(--border); color: var(--muted); }
-.record h2 { font-size: 21px; line-height: 1.35; margin: 4px 0 8px; }
-.authors { color: var(--muted); font-size: 14px; margin-bottom: 4px; }
-.source { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
-.abstract p { margin: 0 0 10px; }
-.extra { font-size: 14px; color: var(--muted); margin-top: 12px; }
-.links { display: flex; gap: 14px; margin-top: 12px; font-size: 14px; flex-wrap: wrap; }
-mark.hl-include { background: var(--hl-include); color: inherit; border-radius: 3px; padding: 0 1px; }
-mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 3px; padding: 0 1px; }
+/* a record, laid out like the first page of an article: reading column and facts on the side */
+.record { padding: 32px 36px 36px; }
+.record-grid { display: grid; grid-template-columns: minmax(0, 1fr) 240px; gap: 48px; align-items: start; }
+.record-main { min-width: 0; max-width: 46rem; }
+.record-title { margin: 0 0 12px; font: 600 26px/1.28 var(--serif); letter-spacing: -.01em; text-wrap: pretty; }
+.authors { margin: 0 0 20px; color: var(--text-2); font-size: 15px; line-height: 1.5; }
+.abstract { font: 400 17.5px/1.68 var(--serif); color: var(--text); }
+.abstract p { margin: 0 0 14px; text-wrap: pretty; }
+.abstract .ab-label { font: 700 12.5px/1 var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--text-2);
+  margin-right: 6px; }
+.abstract-toggle { margin: 4px 0 8px; }
+.abstract-toggle > summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 15px; }
+.abstract-toggle[open] > summary { margin-bottom: 12px; }
+.extra { display: grid; gap: 8px; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); font-size: 14px;
+  color: var(--muted); }
+.extra b { color: var(--text-2); font-weight: 600; }
+.record-rail { position: sticky; top: 132px; display: grid; gap: 20px; padding-left: 24px; border-left: 1px solid var(--border);
+  font-size: 14px; }
+.facts { display: grid; gap: 14px; margin: 0; }
+.facts dt { color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.facts dd { margin: 2px 0 0; color: var(--text); line-height: 1.4; overflow-wrap: anywhere; }
+.facts .journal { font-family: var(--serif); font-style: italic; font-size: 15px; }
+.facts .rid { font: 500 13px/1.4 var(--mono); color: var(--text-2); }
+.links { display: grid; gap: 6px; }
+.links a, a.ext { display: inline-flex; gap: 5px; align-items: center; font-weight: 600; text-decoration: none; overflow-wrap: anywhere; }
+.links a:hover, a.ext:hover { text-decoration: underline; }
+.links .icon, a.ext .icon { width: 14px; height: 14px; }
+mark.hl-include { background: var(--hl-include); color: inherit; border-radius: 3px; padding: 0 2px; }
+mark.hl-exclude { background: var(--hl-exclude); color: inherit; border-radius: 3px; padding: 0 2px; }
+.empty-state { padding: 48px 24px; text-align: center; }
+.empty-state h2 { margin: 0 0 6px; font: 600 22px/1.3 var(--serif); }
+.empty-state p { margin: 0 auto; max-width: 52ch; color: var(--muted); }
+.empty-state .btn { margin-top: 20px; }
 
-.decide { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--border); z-index: 10; }
-.decide .bar { gap: 8px; }
-.decide .choices { display: flex; gap: 8px; flex-wrap: wrap; }
-.choice { border: 2px solid var(--border); background: var(--card); border-radius: 10px; padding: 10px 18px; cursor: pointer; font-weight: 600; min-width: 110px; }
-.choice kbd { font-weight: 400; font-size: 12px; opacity: .7; margin-left: 4px; }
-.choice.include { color: var(--include); } .choice.include[aria-pressed="true"] { background: var(--include-bg); border-color: var(--include); }
-.choice.maybe { color: var(--maybe); } .choice.maybe[aria-pressed="true"] { background: var(--maybe-bg); border-color: var(--maybe); }
-.choice.exclude { color: var(--exclude); } .choice.exclude[aria-pressed="true"] { background: var(--exclude-bg); border-color: var(--exclude); }
+/* the decision bar, always at the bottom */
+.decide { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: var(--surface); box-shadow: var(--shadow-up); }
+.decide .bar { min-height: 76px; padding-top: 12px; padding-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+.decide .choices { display: flex; gap: 8px; }
+.choice { display: inline-flex; gap: 8px; align-items: center; justify-content: center; min-width: 116px; min-height: 48px;
+  padding: 8px 16px; border: 1.5px solid var(--border-strong); border-radius: var(--r); background: var(--raised);
+  font-weight: 700; font-size: 16px; cursor: pointer;
+  transition: background-color .16s var(--ease), border-color .16s var(--ease), color .16s var(--ease), transform .08s; }
+.choice:active:not(:disabled) { transform: translateY(1px); }
+.choice kbd { margin-left: 2px; }
+.choice.include { color: var(--include); } .choice.include:hover { border-color: var(--include); background: var(--include-bg); }
+.choice.maybe { color: var(--maybe); } .choice.maybe:hover { border-color: var(--maybe); background: var(--maybe-bg); }
+.choice.exclude { color: var(--exclude); } .choice.exclude:hover { border-color: var(--exclude); background: var(--exclude-bg); }
+.choice[aria-pressed="true"] { color: var(--surface); }
+.choice[aria-pressed="true"] kbd { background: transparent; color: inherit; border-color: currentColor; opacity: .8; }
+.choice.include[aria-pressed="true"] { background: var(--include); border-color: var(--include); }
+.choice.maybe[aria-pressed="true"] { background: var(--maybe); border-color: var(--maybe); }
+.choice.exclude[aria-pressed="true"] { background: var(--exclude); border-color: var(--exclude); }
 .choice:disabled { opacity: .45; cursor: default; }
 .decide .note { flex: 1 1 140px; min-width: 0; }
-.nav { display: flex; gap: 6px; }
+.decide:has(#reason:not([hidden])) .nav .btn span { display: none; }
+.decide select { max-width: 240px; }
+select.missing, .decide select.missing { border-color: var(--exclude); box-shadow: 0 0 0 3px var(--exclude-bg); }
+.nav { display: flex; gap: 8px; align-items: center; margin-left: auto; }
+.nav .position { margin-right: 6px; }
+.nav .btn { min-height: 48px; }
 
-.decision-list { margin: 10px 0; padding: 0; list-style: none; }
-.decision-list li { padding: 6px 0; border-top: 1px solid var(--border); }
-.tag { font-weight: 600; }
-.tag.include { color: var(--include); } .tag.exclude { color: var(--exclude); } .tag.maybe { color: var(--maybe); }
-.consensus { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
-.consensus input { flex: 1 1 200px; min-width: 0; }
-
-.decide select { max-width: 220px; }
-.decide select.missing { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclude-bg); }
+/* conflicts */
+.conflict .record-title { font-size: 21px; margin-bottom: 6px; }
+.conflict .authors { margin-bottom: 4px; }
+.source { color: var(--muted); font-size: 14px; }
+.source .journal { font-family: var(--serif); font-style: italic; }
+.decision-list { display: grid; gap: 1px; margin: 18px 0; padding: 0; list-style: none; border-radius: var(--r); overflow: hidden;
+  border: 1px solid var(--border); background: var(--border); }
+.decision-list li { display: flex; gap: 10px; flex-wrap: wrap; align-items: baseline; padding: 10px 14px; background: var(--surface); }
+.decision-list .who { min-width: 120px; font-weight: 600; }
+.tag { display: inline-block; padding: 1px 9px; border-radius: var(--r-sm); font-size: 13.5px; font-weight: 700; }
+.tag.include { color: var(--include); background: var(--include-bg); }
+.tag.exclude { color: var(--exclude); background: var(--exclude-bg); }
+.tag.maybe { color: var(--maybe); background: var(--maybe-bg); }
+.agreed { margin: 0 0 12px; }
+.consensus { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+.consensus .choice { min-width: 110px; min-height: 42px; font-size: 15px; }
+.consensus input { flex: 1 1 220px; min-width: 0; }
 .reason { color: var(--muted); font-size: 14px; }
+.details-toggle { margin-top: 16px; }
+.details-toggle > summary { cursor: pointer; color: var(--accent); font-weight: 600; font-size: 14.5px; }
+.details-toggle[open] > summary { margin-bottom: 14px; }
 
-.ft-tabs { display: flex; gap: 6px; margin: 14px 0 10px; flex-wrap: wrap; }
-.fulltext { border-top: 1px solid var(--border); padding-top: 12px; overflow-wrap: anywhere; }
-.fulltext h2 { font-size: 19px; margin: 22px 0 8px; }
-.fulltext h3 { font-size: 17px; margin: 18px 0 6px; }
-.fulltext h4, .fulltext h5, .fulltext h6 { font-size: 16px; margin: 14px 0 6px; }
-.fulltext p { margin: 0 0 10px; }
-.fulltext ul, .fulltext ol { margin: 0 0 10px; padding-left: 24px; }
-.fulltext blockquote { margin: 0 0 10px; padding-left: 12px; border-left: 3px solid var(--border); color: var(--muted); }
-.fulltext pre { white-space: pre-wrap; background: var(--bg); padding: 8px; border-radius: 6px; }
-.fulltext .table-wrap { overflow-x: auto; margin: 0 0 14px; }
-.fulltext table { border-collapse: collapse; font-size: 14px; }
-.fulltext th, .fulltext td { border: 1px solid var(--border); padding: 4px 8px; vertical-align: top; text-align: left; }
-.fulltext th { background: var(--bg); }
-iframe.pdf { width: 100%; height: 80vh; border: 1px solid var(--border); border-radius: 8px; }
+/* full texts */
+.ft-tabs { display: inline-flex; margin: 28px 0 0; }
+.fulltext { margin-top: 16px; padding-top: 20px; border-top: 1px solid var(--border); overflow-wrap: anywhere;
+  font: 400 17px/1.68 var(--serif); }
+.fulltext h2 { margin: 28px 0 10px; font: 600 21px/1.3 var(--serif); }
+.fulltext h3 { margin: 24px 0 8px; font: 600 18.5px/1.35 var(--serif); }
+.fulltext h4, .fulltext h5, .fulltext h6 { margin: 18px 0 6px; font: 600 17px/1.4 var(--serif); }
+.fulltext p { margin: 0 0 14px; }
+.fulltext ul, .fulltext ol { margin: 0 0 14px; padding-left: 26px; }
+.fulltext blockquote { margin: 0 0 14px; padding-left: 14px; border-left: 3px solid var(--border-strong); color: var(--text-2); }
+.fulltext pre, .fulltext code { font: 13.5px/1.5 var(--mono); }
+.fulltext pre { white-space: pre-wrap; background: var(--sunken); padding: 10px 12px; border-radius: var(--r); }
+.fulltext .table-wrap { overflow-x: auto; margin: 0 0 18px; border: 1px solid var(--border); border-radius: var(--r); }
+.fulltext table { border-collapse: collapse; font: 400 14px/1.45 var(--sans); font-variant-numeric: tabular-nums; }
+.fulltext th, .fulltext td { border-bottom: 1px solid var(--border); padding: 6px 10px; vertical-align: top; text-align: left; }
+.fulltext th { background: var(--sunken); font-weight: 600; }
+.fulltext tr:last-child td { border-bottom: 0; }
+iframe.pdf { width: 100%; height: 82vh; border: 1px solid var(--border); border-radius: var(--r); background: #ffffff; }
 
-/* data extraction */
-body.wide header .bar, body.wide main, body.wide .decide .bar { max-width: 1500px; }
-.ex-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
-.ex-text { position: sticky; top: 64px; max-height: calc(100vh - 150px); overflow-y: auto; margin: 0; }
-.ex-form { margin: 0; }
+/* data extraction and risk of bias */
+.ex-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.ex-text { position: sticky; top: 124px; max-height: calc(100vh - 124px - 92px); overflow-y: auto; margin: 0; padding: 26px 28px; }
+.ex-text .record-title { font-size: 22px; }
+.ex-text .authors { margin-bottom: 6px; }
+.ex-text .source { margin-bottom: 12px; }
+.ex-text .links { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 12px 0 0; }
+.ex-form { margin: 0; padding: 26px 28px; }
 @media (max-width: 999px) {
   .ex-layout { grid-template-columns: 1fr; }
   .ex-text { position: static; max-height: 65vh; }
 }
-.ex-form h2 { font-size: 19px; margin: 0 0 4px; }
-.ex-form h3 { font-size: 17px; margin: 20px 0 8px; padding-top: 12px; border-top: 1px solid var(--border); }
-.ex-field { margin: 0 -8px 8px; padding: 6px 8px; border-radius: 8px; }
-.ex-field > label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 3px; }
-.ex-field .help { color: var(--muted); font-size: 13px; margin: -2px 0 4px; }
+.ex-form h2 { margin: 0 0 4px; font: 600 22px/1.3 var(--serif); }
+.ex-form h3 { margin: 28px 0 12px; padding-top: 18px; border-top: 1px solid var(--border); font: 600 18px/1.35 var(--serif); }
+.ex-form > textarea { width: 100%; }
+.ex-field { margin: 0 -10px 10px; padding: 8px 10px; border-radius: var(--r); transition: background-color .2s var(--ease); }
+.ex-field > label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 14.5px; color: var(--text); }
+.ex-field .help { margin: -2px 0 6px; color: var(--muted); font-size: 13.5px; }
 .ex-input { display: flex; gap: 6px; align-items: flex-start; }
 .ex-input > input, .ex-input > select, .ex-input > textarea, .ex-input > .checks, .ex-input > .judgments { flex: 1 1 auto; min-width: 0; width: 100%; }
-.judgments { display: flex; flex-wrap: wrap; gap: 6px; }
-.judgment { border: 2px solid var(--border); background: var(--card); border-radius: 999px; padding: 3px 12px 3px 3px; cursor: pointer;
-  display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
-.judgment .dot { width: 22px; height: 22px; border-radius: 50%; background: var(--level); color: #ffffff; font-weight: 700;
-  display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
-.judgment[aria-pressed="true"] { border-color: var(--level); background: color-mix(in srgb, var(--level) 18%, var(--card)); font-weight: 600; }
-.judgment:disabled { cursor: default; }
-.ex-form .section-help { margin: -4px 0 10px; }
 .ex-input textarea { resize: vertical; }
+.ex-input > .btn { flex: none; min-height: 40px; }
+.judgments { display: flex; flex-wrap: wrap; gap: 6px; }
+.judgment { display: inline-flex; gap: 7px; align-items: center; padding: 3px 13px 3px 3px; border: 1.5px solid var(--border-strong);
+  border-radius: 999px; background: var(--raised); font-size: 14px; cursor: pointer;
+  transition: background-color .16s var(--ease), border-color .16s var(--ease); }
+.judgment:hover:not(:disabled) { border-color: var(--level); }
+.judgment .dot { width: 24px; height: 24px; border-radius: 50%; background: var(--level); color: #ffffff; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 13px; }
+.judgment[aria-pressed="true"] { border-color: var(--level); background: color-mix(in srgb, var(--level) 16%, var(--surface)); font-weight: 700; }
+.judgment:disabled { cursor: default; }
+.ex-form .section-help { margin: -6px 0 12px; }
 .ex-field.diff { background: var(--maybe-bg); }
 .ex-field.changed { background: var(--changed-bg); }
 .ex-field.ai-warn { box-shadow: inset 3px 0 0 var(--maybe); }
-.warn { color: var(--maybe); font-weight: 600; }
-input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 2px var(--exclude-bg); }
-.btn.icon { padding: 6px 8px; line-height: 1; }
-.ex-source, .ex-other { font-size: 13px; color: var(--muted); margin-top: 4px; display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; }
-.ex-source q, .ex-other q { cursor: pointer; font-style: italic; text-decoration: underline dotted; }
-.linklike { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0 4px; }
-.chip { border: 1px solid var(--border); background: var(--card); border-radius: 999px; padding: 2px 10px; cursor: pointer; font-size: 13px; }
-.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--bg); font-weight: 600; }
-.checks { display: flex; flex-wrap: wrap; gap: 2px 14px; font-size: 14px; padding: 4px 0; }
-.ex-row { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
-.ex-row-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0 14px; }
+.warn { display: inline-flex; gap: 5px; align-items: baseline; color: var(--maybe); font-weight: 600; }
+.warn .icon { align-self: center; }
+input.invalid { border-color: var(--exclude); box-shadow: 0 0 0 3px var(--exclude-bg); }
+.ex-source, .ex-other { display: flex; gap: 6px; flex-wrap: wrap; align-items: baseline; margin-top: 6px; color: var(--muted); font-size: 13.5px; }
+.ex-source { display: block; }
+.ex-source .linklike { margin-left: 2px; }
+.ex-source q, .ex-other q { font-family: var(--serif); font-style: italic; font-size: 14.5px; color: var(--text-2); cursor: pointer;
+  text-decoration: underline dotted; text-underline-offset: .2em; }
+.ex-source q:hover, .ex-other q:hover { color: var(--accent); }
+.linklike { border: 0; background: none; color: var(--accent); cursor: pointer; padding: 0 4px; font-weight: 600; }
+.chip { border: 1.5px solid var(--border-strong); border-radius: var(--r-sm); background: var(--raised); padding: 3px 10px;
+  font-size: 13.5px; cursor: pointer; transition: border-color .16s var(--ease); }
+.chip:hover:not(:disabled) { border-color: var(--accent); }
+.chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft); color: var(--text); font-weight: 600; }
+.checks { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 6px 0; font-size: 14.5px; }
+.checks label { display: inline-flex; gap: 6px; align-items: center; }
+.ex-row { margin-bottom: 12px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r); background: var(--bg); }
+.ex-row-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0 14px; }
 .ex-row-actions { display: flex; gap: 8px; justify-content: flex-end; }
-.ex-item { display: flex; gap: 10px; align-items: center; width: 100%; text-align: left; cursor: pointer; padding: 12px 16px; margin-bottom: 8px; }
-.ex-item:hover { border-color: var(--accent); }
-.ex-item .grow { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.status { font-size: 13px; font-weight: 600; white-space: nowrap; }
+.status { display: inline-flex; gap: 5px; align-items: center; font-size: 13.5px; font-weight: 600; white-space: nowrap; }
+.status .icon { width: 15px; height: 15px; }
 .status.done { color: var(--include); } .status.draft { color: var(--maybe); } .status.todo, .status.waiting { color: var(--muted); }
 .status.open { color: var(--exclude); }
 .flash { animation: flash 2.5s ease-out; }
 @keyframes flash { from { background: var(--hl-include); } to { background: transparent; } }
+.note-panel { margin-bottom: 16px; padding: 14px 18px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--border); }
+.note-panel > summary { display: flex; gap: 8px; align-items: center; cursor: pointer; font-weight: 600; color: var(--text); }
+.note-panel > summary .icon { color: var(--accent); }
+.note-panel[open] > summary { margin-bottom: 8px; }
+.note-panel p { margin: 0 0 8px; max-width: 75ch; color: var(--text-2); }
+.list { margin-bottom: 16px; padding: 0; border: 1px solid var(--border); border-radius: var(--r-lg); background: var(--surface);
+  overflow: hidden; box-shadow: var(--shadow-sm); }
+.ex-item { display: grid; grid-template-columns: minmax(96px, auto) minmax(0, 1fr) auto auto 18px; gap: 16px; align-items: center;
+  width: 100%; padding: 14px 18px; border: 0; border-bottom: 1px solid var(--border); background: none; color: inherit;
+  text-align: left; cursor: pointer; transition: background-color .16s var(--ease); }
+.ex-item:last-child { border-bottom: 0; }
+.ex-item:hover { background: var(--accent-soft); }
+.ex-item .study { font: 600 17px/1.25 var(--serif); }
+.ex-item .study small { display: block; margin-top: 2px; font: 500 12px/1.2 var(--mono); color: var(--muted); }
+.ex-item .grow { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-2); font-size: 15px; }
+.ex-item .tags { display: flex; gap: 6px; }
+.ex-item .chev { color: var(--faint); }
+.ex-item:hover .chev { color: var(--accent); }
+.ex-state { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; font-size: 14.5px; }
+.ex-state.done { color: var(--include); }
+.ex-state .icon { width: 17px; height: 17px; }
 
-/* home: the phases of the review, drawn like a PRISMA flow diagram */
-.brand { color: inherit; text-decoration: none; }
-a.brand:hover #brandName { color: var(--accent); }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.home { display: grid; gap: 16px; }
-.eyebrow { margin: 0; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-.home-top { display: grid; gap: 18px; margin: 0; }
-.home-top h1 { margin: 2px 0 2px; font-size: 26px; line-height: 1.2; text-wrap: balance; }
-.home-top .repo { margin: 0; font-size: 14px; color: var(--muted); }
-.where { display: grid; gap: 8px; }
-.where p { margin: 0; }
-.where strong { font-size: 17px; }
+/* home: where the review is, my work, the phases as in a PRISMA flow diagram */
+.home { display: grid; gap: 28px; padding-top: 12px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr); gap: 48px; align-items: start; }
+.kicker { margin: 0 0 10px; color: var(--accent); font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.hero h1 { margin: 0 0 14px; font: 600 clamp(28px, 2.7vw, 36px)/1.16 var(--serif); letter-spacing: -.015em; text-wrap: balance; }
+.hero .repo { margin: -4px 0 18px; font-size: 14px; }
+.where { display: grid; gap: 10px; max-width: 560px; margin-top: 22px; }
+.where p { margin: 0; color: var(--text-2); }
+.where strong { color: var(--text); font-weight: 700; }
+.where .count { color: var(--muted); font-size: 14px; }
 .phase-bar { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin: 0; padding: 0; list-style: none; }
-.phase-bar li { height: 8px; border-radius: 2px; background: var(--border); }
-.phase-bar li.done { background: var(--include); }
-.phase-bar li.open { background: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.phase-bar li.current { background: var(--accent); }
-.task { display: flex; gap: 12px 20px; align-items: center; flex-wrap: wrap; padding: 14px 16px; border-radius: 10px; background: var(--bg); }
-.task.turn { background: var(--maybe-bg); }
-.task .grow { flex: 1 1 260px; min-width: 0; }
-.task p { margin: 0; }
-.task .eyebrow { color: inherit; }
-.task.turn .eyebrow { color: var(--maybe); }
-.task strong { font-size: 18px; }
-.meter { display: block; height: 6px; max-width: 320px; margin-top: 8px; border-radius: 3px; overflow: hidden;
-  background: color-mix(in srgb, var(--text) 12%, transparent); }
-.meter > span { display: block; height: 100%; background: var(--include); }
-.task .btn.primary { padding: 10px 18px; font-weight: 600; text-decoration: none; }
+.phase-bar li { height: 6px; border-radius: 3px; background: var(--border-strong); opacity: .7; }
+.phase-bar li.done { background: var(--accent); opacity: 1; }
+.phase-bar li.open { background: var(--accent-line); opacity: 1; }
+.phase-bar li.current { background: var(--maybe); opacity: 1; }
+.work { margin: 0; padding: 22px 22px 18px; box-shadow: var(--shadow); }
+.work h2 { margin: 0 0 4px; font: 600 21px/1.3 var(--serif); }
+.work > p { margin: 0 0 14px; color: var(--muted); font-size: 14.5px; }
+.work-list { display: grid; gap: 10px; }
+.work-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 14px; align-items: center; padding: 14px 16px;
+  border: 1px solid var(--border); border-radius: var(--r); background: var(--raised); color: inherit; text-decoration: none;
+  transition: border-color .16s var(--ease), background-color .16s var(--ease); }
+.work-item:hover { border-color: var(--accent); color: inherit; }
+.work-item.next { border-color: var(--accent-line); background: var(--accent-soft); }
+.work-item.next:hover { border-color: var(--accent); }
+.work-title { display: block; font-weight: 700; font-size: 16px; }
+.work-count { display: block; margin-top: 2px; color: var(--text-2); font-size: 14px; font-variant-numeric: tabular-nums; }
+.work-item .btn { pointer-events: none; }
+.work-item.finished .work-count { color: var(--include); font-weight: 600; }
+.meter { display: block; height: 5px; max-width: 280px; margin-top: 8px; border-radius: 3px; overflow: hidden;
+  background: color-mix(in srgb, var(--text) 10%, transparent); }
+.meter > span { display: block; height: 100%; border-radius: 3px; background: var(--accent); }
+.nothing { padding: 14px 16px; border-radius: var(--r); background: var(--sunken); color: var(--text-2); font-size: 15px; }
+.nothing strong { display: block; margin-bottom: 2px; color: var(--text); }
 
-.flow-card { margin: 0; padding: 20px 20px 8px; }
-.flow-card > h2 { margin: 0 0 10px; font-size: 18px; }
-.group { display: grid; grid-template-columns: 28px minmax(0, 1fr); column-gap: 12px; }
-.band { display: flex; align-items: center; justify-content: center; margin: 6px 0; border-radius: 6px;
-  background: color-mix(in srgb, var(--accent) 10%, var(--card)); color: color-mix(in srgb, var(--accent) 75%, var(--text)); }
-.band span { writing-mode: vertical-rl; transform: rotate(180deg); padding: 10px 0; font-size: 11px; font-weight: 700;
-  letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; }
+.flow-card { margin: 0; padding: 26px 28px 12px; }
+.flow-head { display: flex; gap: 12px; align-items: baseline; justify-content: space-between; flex-wrap: wrap; margin-bottom: 6px; }
+.flow-head h2 { margin: 0; font: 600 22px/1.3 var(--serif); }
+.flow-head p { margin: 0; color: var(--muted); font-size: 14px; }
+.group-label { display: flex; gap: 12px; align-items: center; margin: 18px 0 2px 46px; color: var(--muted); font-size: 13px;
+  font-weight: 700; letter-spacing: .02em; }
+.group-label::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 .steps { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }
-.step:last-child { flex: 1 0 auto; }  /* the connector reaches the next group */
-.step { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr); column-gap: 10px;
+.step { position: relative; display: grid; grid-template-columns: 34px minmax(0, 1fr); column-gap: 12px;
   --line-in: transparent; --line-out: transparent; }
-.step::before, .step::after { content: ""; position: absolute; left: 17px; width: 2px; }
-.step::before { top: 0; height: 16px; background: var(--line-in); }
-.step::after { top: 48px; bottom: 0; background: var(--line-out); }
-.node { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 32px; height: 32px;
-  margin: 16px 2px 0; border-radius: 50%; border: 2px solid var(--border); background: var(--card); color: var(--muted);
+.step::before, .step::after { content: ""; position: absolute; left: 16px; width: 2px; }
+.step::before { top: 0; height: 20px; background: var(--line-in); }
+.step::after { top: 50px; bottom: 0; background: var(--line-out); }
+.group .step:first-child::before { top: -30px; height: 50px; }
+.node { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
+  margin-top: 16px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--surface); color: var(--muted);
   font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.step.done .node { border-color: var(--include); background: var(--include); color: var(--card); }
+.step.done .node { border-color: var(--accent); background: var(--accent); color: var(--accent-text); }
 .step.open .node { border-color: var(--accent); color: var(--accent); }
-.step.current .node { background: var(--accent); border-color: var(--accent); color: var(--accent-text);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
-.node svg { width: 16px; height: 16px; }
-.step-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 16px; align-items: center; width: 100%;
-  margin: 6px 0; padding: 10px 12px; border: 1px solid transparent; border-radius: 10px; background: none;
-  color: inherit; text-align: left; text-decoration: none; font: inherit; }
-a.step-body, button.step-body { cursor: pointer; }
-a.step-body:hover, button.step-body:hover { background: var(--bg); border-color: var(--border); }
-.step.current .step-body { background: color-mix(in srgb, var(--accent) 7%, var(--card));
-  border-color: color-mix(in srgb, var(--accent) 35%, var(--border)); }
-.step.todo:not(.current) .step-title { color: var(--muted); }
+.step.current .node { box-shadow: 0 0 0 5px color-mix(in srgb, var(--maybe) 22%, transparent); border-color: var(--maybe);
+  background: var(--maybe); color: var(--surface); }
+.node .icon { width: 17px; height: 17px; }
+.step-body { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: center; width: 100%;
+  margin: 6px 0; padding: 12px 14px; border: 1px solid transparent; border-radius: var(--r); color: inherit;
+  text-align: left; text-decoration: none; transition: background-color .16s var(--ease), border-color .16s var(--ease); }
+a.step-body { cursor: pointer; }
+a.step-body:hover { background: var(--bg); border-color: var(--border); color: inherit; }
+a.step-body.stage { border-color: var(--border); background: var(--raised); }
+a.step-body.stage:hover { border-color: var(--accent); background: var(--raised); }
+.step.current .step-body { border-color: color-mix(in srgb, var(--maybe) 45%, var(--border)); }
+.step.todo .step-title { color: var(--muted); }
 .step-main { display: grid; gap: 3px; min-width: 0; }
-.step-head { display: flex; gap: 6px 10px; align-items: baseline; flex-wrap: wrap; }
-.step-title { font-size: 17px; font-weight: 600; }
-.step-detail { font-size: 14px; color: var(--muted); }
-.step-mine { font-size: 14px; }
-.step-mine .meter { max-width: 240px; margin-top: 4px; }
-.step-side { display: grid; gap: 2px; justify-items: end; text-align: right; }
-.figure { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.figure small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); }
-.go { font-size: 14px; font-weight: 600; color: var(--accent); white-space: nowrap; }
-.pill { font-size: 12px; font-weight: 600; line-height: 1.6; padding: 0 8px; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
-.pill.done { color: var(--include); background: var(--include-bg); }
-.pill.open { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--card)); }
-.pill.todo { color: var(--muted); border-color: var(--border); }
-.pill.turn { color: var(--maybe); background: var(--maybe-bg); }
-.pill.who { color: var(--muted); font-weight: 500; border-color: var(--border); }
-code.cmd { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; padding: 0 6px; white-space: nowrap;
-  border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); }
-.home-docs { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; margin: 10px 0 0; padding: 12px 0 8px;
-  border-top: 1px solid var(--border); font-size: 14px; }
-.tab.home-tab { border-style: dashed; }
-@media (max-width: 640px) {
-  .home-top h1 { font-size: 22px; }
-  .flow-card { padding: 16px 12px 6px; }
-  .group { grid-template-columns: minmax(0, 1fr); }
-  .band { justify-content: flex-start; margin: 12px 0 0; background: none; }
-  .band span { writing-mode: horizontal-tb; transform: none; padding: 0; }
-  .step-body { grid-template-columns: minmax(0, 1fr); }
-  .step-side { justify-items: start; text-align: left; grid-auto-flow: column; gap: 12px; align-items: baseline; }
-  .figure small { display: inline; margin-left: 4px; }
-}
+.step-head { display: flex; gap: 6px 10px; align-items: center; flex-wrap: wrap; }
+.step-title { font-size: 16.5px; font-weight: 700; }
+.step-detail { color: var(--text-2); font-size: 14.5px; }
+.step-meta { color: var(--muted); font-size: 13.5px; }
+.step-cmd { color: var(--muted); font-size: 13.5px; }
+.step-mine { margin-top: 4px; color: var(--text-2); font-size: 14px; }
+.step-mine .meter { max-width: 240px; margin-top: 5px; }
+.step-side { display: flex; gap: 18px; align-items: center; justify-content: flex-end; text-align: right; }
+.figure { display: grid; justify-items: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.figure b { font: 600 20px/1.1 var(--serif); color: var(--text); }
+.figure small { color: var(--muted); font-size: 12.5px; }
+.go-link { display: inline-flex; gap: 5px; align-items: center; color: var(--accent); font-size: 14px; font-weight: 600; white-space: nowrap; }
+.go-link .icon { width: 14px; height: 14px; }
+.turn-tag { display: inline-flex; align-items: center; padding: 1px 9px; border-radius: var(--r-sm); background: var(--maybe-bg);
+  color: var(--maybe); font-size: 13px; font-weight: 700; }
+code.cmd { padding: 1px 7px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--sunken);
+  color: var(--text); font: 13px/1.5 var(--mono); white-space: nowrap; }
+.home-docs { display: flex; flex-wrap: wrap; gap: 8px 22px; align-items: center; max-width: 600px; margin: 32px 0 0; padding: 18px 0 0;
+  border-top: 1px solid var(--border); font-size: 14.5px; }
+.home-docs .label { color: var(--muted); font-weight: 700; font-size: 13px; }
+.home-docs a { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; text-decoration: none; }
+.home-docs a:hover { text-decoration: underline; }
 
-.login { max-width: 520px; margin: 40px auto; }
-.login label { display: block; font-weight: 600; margin: 14px 0 4px; }
+/* login and loading */
+.login { display: grid; place-items: center; min-height: calc(100dvh - 220px); }
+.login-card { width: 100%; max-width: 460px; margin: 24px auto; padding: 36px 36px 30px; box-shadow: var(--shadow); }
+.login-card h1 { margin: 0 0 10px; font: 600 30px/1.2 var(--serif); letter-spacing: -.01em; }
+.login-card .lead { margin: 0 0 22px; color: var(--text-2); }
+.login label { display: block; margin: 16px 0 6px; font-weight: 600; font-size: 15px; }
 .login input[type=text], .login input[type=password] { width: 100%; }
-.help { font-size: 14px; }
-.help kbd, .keys kbd { border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; font-size: 13px; background: var(--bg); }
+.login .hint { margin: 6px 0 0; color: var(--muted); font-size: 13.5px; }
+.login .remember { display: flex; gap: 8px; align-items: center; margin: 18px 0 22px; font-weight: 400; }
+.login .btn.primary { width: 100%; min-height: 46px; font-size: 16px; }
+.login .privacy { display: flex; gap: 8px; margin: 18px 0 0; color: var(--muted); font-size: 13.5px; }
+.login .privacy .icon { margin-top: 2px; }
+.loading { display: grid; justify-items: center; gap: 14px; padding: 72px 24px; color: var(--muted); }
+.loading p { margin: 0; }
+.loader { width: 180px; height: 3px; border-radius: 3px; overflow: hidden; background: var(--border); }
+.loader::before { content: ""; display: block; width: 40%; height: 100%; border-radius: 3px; background: var(--accent);
+  animation: loader 1.1s var(--ease) infinite; }
+@keyframes loader { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+
+@media (max-width: 1100px) {
+  .nav .btn span { display: none; }
+}
+@media (max-width: 900px) {
+  .hero { grid-template-columns: 1fr; gap: 24px; }
+  .record-grid { grid-template-columns: 1fr; gap: 24px; }
+  .record-rail { position: static; padding: 18px 0 0; border-left: 0; border-top: 1px solid var(--border); }
+  .facts { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); }
+}
+@media (max-width: 640px) {
+  .bar { padding: 0 16px; }
+  main { padding: 16px 16px 200px; }
+  .review-title { display: none; }
+  .record, .card { padding: 20px 18px; }
+  .record-title { font-size: 22px; }
+  .abstract { font-size: 17px; }
+  .flow-card { padding: 20px 14px 8px; }
+  .step-body { grid-template-columns: minmax(0, 1fr); padding: 10px; }
+  .step-side { justify-content: flex-start; text-align: left; }
+  .figure { justify-items: start; }
+  .choice { min-width: 0; flex: 1 1 0; padding: 8px 10px; }
+  .choice kbd { display: none; }
+  .decide .choices { flex: 1 1 100%; }
+  .nav { margin-left: 0; }
+  .ex-item { grid-template-columns: minmax(0, 1fr) auto; }
+  .ex-item .grow, .ex-item .tags, .ex-item .chev { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
 </style>
 </head>
 <body>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+<!-- Icons: Phosphor (https://phosphoricons.com), MIT license -->
+<symbol id="i-funnel-simple-bold" viewBox="0 0 256 256"><path d="M204,136a12,12,0,0,1-12,12H64a12,12,0,0,1,0-24H192A12,12,0,0,1,204,136Zm28-60H24a12,12,0,0,0,0,24H232a12,12,0,0,0,0-24Zm-80,96H104a12,12,0,0,0,0,24h48a12,12,0,0,0,0-24Z"/></symbol>
+<symbol id="i-sign-out" viewBox="0 0 256 256"><path d="M120,216a8,8,0,0,1-8,8H48a8,8,0,0,1-8-8V40a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H56V208h56A8,8,0,0,1,120,216Zm109.66-93.66-40-40a8,8,0,0,0-11.32,11.32L204.69,120H112a8,8,0,0,0,0,16h92.69l-26.35,26.34a8,8,0,0,0,11.32,11.32l40-40A8,8,0,0,0,229.66,122.34Z"/></symbol>
+<symbol id="i-info" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,84a12,12,0,1,1,12,12A12,12,0,0,1,112,84Z"/></symbol>
+<symbol id="i-magnifying-glass" viewBox="0 0 256 256"><path d="M229.66,218.34l-50.07-50.06a88.11,88.11,0,1,0-11.31,11.31l50.06,50.07a8,8,0,0,0,11.32-11.32ZM40,112a72,72,0,1,1,72,72A72.08,72.08,0,0,1,40,112Z"/></symbol>
+<symbol id="i-keyboard" viewBox="0 0 256 256"><path d="M224,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H224a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48Zm0,144H32V64H224V192Zm-16-64a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,128Zm0-32a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16H200A8,8,0,0,1,208,96ZM72,160a8,8,0,0,1-8,8H56a8,8,0,0,1,0-16h8A8,8,0,0,1,72,160Zm96,0a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,160Zm40,0a8,8,0,0,1-8,8h-8a8,8,0,0,1,0-16h8A8,8,0,0,1,208,160Z"/></symbol>
+<symbol id="i-list" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></symbol>
+<symbol id="i-caret-left" viewBox="0 0 256 256"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></symbol>
+<symbol id="i-caret-right" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol>
+<symbol id="i-check-bold" viewBox="0 0 256 256"><path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/></symbol>
+<symbol id="i-question-bold" viewBox="0 0 256 256"><path d="M144,180a16,16,0,1,1-16-16A16,16,0,0,1,144,180Zm92-52A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128ZM128,64c-24.26,0-44,17.94-44,40v4a12,12,0,0,0,24,0v-4c0-8.82,9-16,20-16s20,7.18,20,16-9,16-20,16a12,12,0,0,0-12,12v8a12,12,0,0,0,23.73,2.56C158.31,137.88,172,122.37,172,104,172,81.94,152.26,64,128,64Z"/></symbol>
+<symbol id="i-x-bold" viewBox="0 0 256 256"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></symbol>
+<symbol id="i-arrow-right" viewBox="0 0 256 256"><path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"/></symbol>
+<symbol id="i-arrow-left" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"/></symbol>
+<symbol id="i-arrow-up-right" viewBox="0 0 256 256"><path d="M200,64V168a8,8,0,0,1-16,0V83.31L69.66,197.66a8,8,0,0,1-11.32-11.32L172.69,72H88a8,8,0,0,1,0-16H192A8,8,0,0,1,200,64Z"/></symbol>
+<symbol id="i-check" viewBox="0 0 256 256"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></symbol>
+<symbol id="i-paperclip" viewBox="0 0 256 256"><path d="M209.66,122.34a8,8,0,0,1,0,11.32l-82.05,82a56,56,0,0,1-79.2-79.21L147.67,35.73a40,40,0,1,1,56.61,56.55L105,193A24,24,0,1,1,71,159L154.3,74.38A8,8,0,1,1,165.7,85.6L82.39,170.31a8,8,0,1,0,11.27,11.36L192.93,81A24,24,0,1,0,159,47L59.76,147.68a40,40,0,1,0,56.53,56.62l82.06-82A8,8,0,0,1,209.66,122.34Z"/></symbol>
+<symbol id="i-warning" viewBox="0 0 256 256"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM222.93,203.8a8.5,8.5,0,0,1-7.48,4.2H40.55a8.5,8.5,0,0,1-7.48-4.2,7.59,7.59,0,0,1,0-7.72L120.52,44.21a8.75,8.75,0,0,1,15,0l87.45,151.87A7.59,7.59,0,0,1,222.93,203.8ZM120,144V104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,180Z"/></symbol>
+<symbol id="i-file-text" viewBox="0 0 256 256"><path d="M213.66,82.34l-56-56A8,8,0,0,0,152,24H56A16,16,0,0,0,40,40V216a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V88A8,8,0,0,0,213.66,82.34ZM160,51.31,188.69,80H160ZM200,216H56V40h88V88a8,8,0,0,0,8,8h48V216Zm-32-80a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,136Zm0,32a8,8,0,0,1-8,8H96a8,8,0,0,1,0-16h64A8,8,0,0,1,168,168Z"/></symbol>
+<symbol id="i-book-open" viewBox="0 0 256 256"><path d="M232,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H24a8,8,0,0,0-8,8V200a8,8,0,0,0,8,8H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h72a8,8,0,0,0,8-8V56A8,8,0,0,0,232,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A39.81,39.81,0,0,0,96,192Zm128,0H160a39.81,39.81,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"/></symbol>
+<symbol id="i-copy" viewBox="0 0 256 256"><path d="M216,32H88a8,8,0,0,0-8,8V80H40a8,8,0,0,0-8,8V216a8,8,0,0,0,8,8H168a8,8,0,0,0,8-8V176h40a8,8,0,0,0,8-8V40A8,8,0,0,0,216,32ZM160,208H48V96H160Zm48-48H176V88a8,8,0,0,0-8-8H96V48H208Z"/></symbol>
+<symbol id="i-trash" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96Zm96,168H64V64H192ZM112,104v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0v64a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Z"/></symbol>
+<symbol id="i-x" viewBox="0 0 256 256"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></symbol>
+<symbol id="i-check-circle" viewBox="0 0 256 256"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></symbol>
+<symbol id="i-hourglass-medium" viewBox="0 0 256 256"><path d="M200,75.64V40a16,16,0,0,0-16-16H72A16,16,0,0,0,56,40V76a16.07,16.07,0,0,0,6.4,12.8L114.67,128,62.4,167.2A16.07,16.07,0,0,0,56,180v36a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V180.36a16.09,16.09,0,0,0-6.35-12.77L141.27,128l52.38-39.6A16.05,16.05,0,0,0,200,75.64ZM72,40H184V75.64L178.23,80H77.33L72,76Zm56,78L98.67,96h58.4Zm56,98H72V180l48-36v24a8,8,0,0,0,16,0V144.08l48,36.28Z"/></symbol>
+<symbol id="i-arrow-counter-clockwise" viewBox="0 0 256 256"><path d="M224,128a96,96,0,0,1-94.71,96H128A95.38,95.38,0,0,1,62.1,197.8a8,8,0,0,1,11-11.63A80,80,0,1,0,71.43,71.39a3.07,3.07,0,0,1-.26.25L44.59,96H72a8,8,0,0,1,0,16H24a8,8,0,0,1-8-8V56a8,8,0,0,1,16,0V85.8L60.25,60A96,96,0,0,1,224,128Z"/></symbol>
+<symbol id="i-warning-circle" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm-8-80V80a8,8,0,0,1,16,0v56a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,172Z"/></symbol>
+<symbol id="i-users" viewBox="0 0 256 256"><path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z"/></symbol>
+</svg>
+<a class="skip" href="#main">Vai al contenuto</a>
 <header>
-  <div class="bar">
-    <a class="brand" id="brandLink" href="?" title="Tutte le fasi della review"><span id="brandName">sysrev</span> <span id="stageLabel"></span></a>
+  <div class="bar top-row">
+    <a class="brand" id="brandLink" href="?" title="Panoramica della review">
+      <span class="brand-mark" aria-hidden="true"><svg class="icon"><use href="#i-funnel-simple-bold"/></svg></span>
+      <span id="brandName">sysrev</span>
+    </a>
     <span class="review-title" id="reviewTitle"></span>
-    <span class="save" id="saveState" hidden></span>
+    <span class="save" id="saveState" role="status" hidden></span>
     <span class="user" id="user"></span>
-    <button class="btn small" id="logout" hidden>Esci</button>
+    <button class="btn ghost small" id="logout" hidden><svg class="icon" aria-hidden="true"><use href="#i-sign-out"/></svg>Esci</button>
   </div>
+  <nav class="stage-nav" id="stageTabs" hidden aria-label="Fasi della review">
+    <div class="bar">
+      <button class="stage-link" id="homeTab">Panoramica</button>
+      <button class="stage-link" data-stage="title_abstract">Titolo e abstract</button>
+      <button class="stage-link" data-stage="full_text">Full text</button>
+      <button class="stage-link" data-stage="extraction">Estrazione dei dati</button>
+      <button class="stage-link" data-stage="risk_of_bias">Rischio di bias</button>
+      <span class="spacer"></span>
+      <span class="my-progress" id="myProgress"></span>
+    </div>
+  </nav>
   <div class="progress"><div id="progressBar"></div></div>
 </header>
 
-<main>
-  <div id="banner" class="banner" hidden></div>
+<main id="main">
+  <div id="banner" class="banner" role="status" hidden></div>
 
-  <section id="loginView" class="card login" hidden>
-    <h1 style="margin-top:0">Screening, estrazione dei dati e rischio di bias</h1>
-    <p class="muted">Per entrare servono il nome del repository della review e il tuo token GitHub.
-      <span id="guide">La guida per i revisori, nel repository della review, spiega come creare il token.</span></p>
-    <form id="loginForm">
-      <label for="repoInput">Repository della review</label>
-      <input type="text" id="repoInput" placeholder="sysrev-org/nome-della-review" autocomplete="off" spellcheck="false" required>
-      <label for="tokenInput">Token GitHub</label>
-      <input type="password" id="tokenInput" placeholder="github_pat_..." autocomplete="off" spellcheck="false" required>
-      <p><label style="display:inline;font-weight:400"><input type="checkbox" id="rememberInput" checked>
-        Ricorda su questo computer</label></p>
-      <button class="btn primary" type="submit">Entra</button>
-    </form>
+  <section id="loginView" class="login" hidden>
+    <div class="card login-card">
+      <p class="kicker">Systematic review</p>
+      <h1>Entra nella review</h1>
+      <p class="lead">Screening, estrazione dei dati e rischio di bias, tutto in questa pagina.
+        Servono il nome del repository della review e il tuo token GitHub.</p>
+      <form id="loginForm">
+        <label for="repoInput">Repository della review</label>
+        <input type="text" id="repoInput" placeholder="sysrev-org/nome-della-review" autocomplete="off" spellcheck="false" required>
+        <p class="hint">È nel link che ti ha mandato chi coordina.</p>
+        <label for="tokenInput">Token GitHub</label>
+        <input type="password" id="tokenInput" placeholder="github_pat_..." autocomplete="off" spellcheck="false" required>
+        <p class="hint" id="guide">La guida per i revisori, nel repository della review, spiega come creare il token.</p>
+        <label class="remember"><input type="checkbox" id="rememberInput" checked> Ricorda su questo computer</label>
+        <button class="btn primary" type="submit">Entra</button>
+      </form>
+      <p class="privacy"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+        <span>Il token resta in questo browser ed è inviato soltanto a GitHub.</span></p>
+    </div>
   </section>
 
-  <section id="loadingView" class="card" hidden><p id="loadingText">Caricamento…</p></section>
+  <section id="loadingView" class="loading" hidden><div class="loader" aria-hidden="true"></div><p id="loadingText">Caricamento…</p></section>
 
-  <section id="homeView" class="home" hidden aria-label="Fasi della review"></section>
+  <section id="homeView" class="home" hidden aria-label="Panoramica della review"></section>
 
-  <nav class="tabs" id="stageTabs" hidden aria-label="Fase della review">
-    <button class="tab home-tab" id="homeTab">← Tutte le fasi</button>
-    <button class="tab" data-stage="title_abstract" aria-selected="false">Titolo e abstract</button>
-    <button class="tab" data-stage="full_text" aria-selected="false">Full text</button>
-    <button class="tab" data-stage="extraction" aria-selected="false">Estrazione dati</button>
-    <button class="tab" data-stage="risk_of_bias" aria-selected="false">Rischio di bias</button>
-  </nav>
-
-  <nav class="tabs" id="tabs" hidden>
+  <nav class="tabs" id="tabs" hidden aria-label="Vista">
     <button class="tab" id="tabScreen" aria-selected="true">Le mie decisioni</button>
     <button class="tab" id="tabConflicts" aria-selected="false">Conflitti</button>
   </nav>
@@ -314,15 +600,19 @@ code.cmd { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospa
         <option value="maybe">Forse</option>
         <option value="exclude">Esclusi</option>
       </select>
-      <input type="search" id="search" placeholder="Cerca nel titolo, abstract, autori" aria-label="Cerca">
+      <label class="search"><svg class="icon" aria-hidden="true"><use href="#i-magnifying-glass"/></svg>
+        <input type="search" id="search" placeholder="Cerca nel titolo, nell'abstract, negli autori" aria-label="Cerca"></label>
+      <span class="spacer"></span>
       <span class="position" id="position"></span>
-      <button class="btn small" id="helpButton" type="button">Tasti</button>
+      <button class="btn ghost small" id="helpButton" type="button" aria-controls="help"><svg class="icon" aria-hidden="true"><use href="#i-keyboard"/></svg>Tasti</button>
     </div>
     <div class="card help" id="help" hidden>
-      <span class="keys"><kbd>I</kbd> includi · <kbd>F</kbd> forse · <kbd>E</kbd> escludi ·
-      <span id="reasonKeys" hidden><kbd>1</kbd>…<kbd>9</kbd> escludi con quel motivo ·</span>
-      <kbd>←</kbd> <kbd>→</kbd> record precedente / successivo · <kbd>N</kbd> scrivi una nota</span>.
-      Le decisioni si salvano da sole su GitHub dopo pochi secondi; puoi cambiarle quando vuoi finché lo screening è aperto.
+      <ul class="keys">
+        <li><kbd>I</kbd> includi</li><li><kbd>F</kbd> forse</li><li><kbd>E</kbd> escludi</li>
+        <li id="reasonKeys" hidden><kbd>1</kbd>…<kbd>9</kbd> escludi con quel motivo</li>
+        <li><kbd>←</kbd> <kbd>→</kbd> record precedente e successivo</li><li><kbd>N</kbd> scrivi una nota</li>
+      </ul>
+      <span class="muted">Le decisioni si salvano da sole su GitHub dopo pochi secondi; puoi cambiarle quando vuoi finché lo screening è aperto.</span>
     </div>
     <article class="card record" id="record"></article>
   </section>
@@ -335,12 +625,13 @@ code.cmd { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospa
         <option value="all">Tutti</option>
       </select>
       <label class="small"><input type="checkbox" id="onlyMine"> Solo quelli in cui sono revisore</label>
+      <span class="spacer"></span>
       <span class="position" id="conflictCount"></span>
     </div>
     <div id="conflictList"></div>
   </section>
   <section id="extractionView" hidden>
-    <nav class="tabs" id="exTabs" hidden>
+    <nav class="tabs" id="exTabs" hidden aria-label="Vista">
       <button class="tab" id="exTabMine" aria-selected="true">Le mie schede</button>
       <button class="tab" id="exTabCompare" aria-selected="false">Differenze</button>
     </nav>
@@ -351,13 +642,14 @@ code.cmd { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospa
           <option value="resolved">Risolti</option>
           <option value="all">Tutti</option>
         </select>
+        <span class="spacer"></span>
         <span class="position" id="exCompareCount"></span>
       </div>
-      <details class="card help" id="exHelp">
-        <summary><strong>Come funziona</strong></summary>
+      <details class="note-panel help" id="exHelp">
+        <summary><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>Come funziona</summary>
         <div id="exHelpText">
         <p>Apri uno studio: a sinistra c'è il testo, a destra la scheda da compilare. Per indicare da dove viene
-          un dato, seleziona la frase nel testo e clicca <strong>📎</strong> accanto al campo (con il PDF puoi
+          un dato, seleziona la frase nel testo e clicca <strong>Fonte</strong> accanto al campo (con il PDF puoi
           scriverlo tu, per esempio "Tabella 2"). Nei risultati va una riga per ogni combinazione di outcome,
           momento e gruppo.</p>
         <p>Le schede si salvano da sole su GitHub. Quando hai finito uno studio clicca
@@ -372,28 +664,29 @@ code.cmd { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospa
 
 <div class="decide" id="exBar" hidden>
   <div class="bar">
-    <button class="btn" id="exBack">← Elenco</button>
+    <button class="btn" id="exBack"><svg class="icon" aria-hidden="true"><use href="#i-list"/></svg>Elenco degli studi</button>
+    <span class="ex-state" id="exState" hidden></span>
     <button class="btn primary" id="exDone"></button>
-    <span class="position" id="exPosition"></span>
     <div class="nav">
-      <button class="btn" id="exPrev" aria-label="Studio precedente">←</button>
-      <button class="btn" id="exNext" aria-label="Studio successivo">→</button>
+      <span class="position" id="exPosition"></span>
+      <button class="btn" id="exPrev" aria-label="Studio precedente"><svg class="icon" aria-hidden="true"><use href="#i-caret-left"/></svg><span>Precedente</span></button>
+      <button class="btn" id="exNext" aria-label="Studio successivo"><span>Successivo</span><svg class="icon" aria-hidden="true"><use href="#i-caret-right"/></svg></button>
     </div>
   </div>
 </div>
 
 <div class="decide" id="decideBar" hidden>
   <div class="bar">
-    <div class="choices">
-      <button class="choice include" data-decision="include" aria-pressed="false">Includi<kbd>I</kbd></button>
-      <button class="choice maybe" data-decision="maybe" aria-pressed="false">Forse<kbd>F</kbd></button>
-      <button class="choice exclude" data-decision="exclude" aria-pressed="false">Escludi<kbd>E</kbd></button>
+    <div class="choices" role="group" aria-label="Decisione">
+      <button class="choice include" data-decision="include" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-check-bold"/></svg>Includi<kbd>I</kbd></button>
+      <button class="choice maybe" data-decision="maybe" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-question-bold"/></svg>Forse<kbd>F</kbd></button>
+      <button class="choice exclude" data-decision="exclude" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-x-bold"/></svg>Escludi<kbd>E</kbd></button>
     </div>
     <select id="reason" hidden aria-label="Motivo di esclusione"></select>
-    <input type="text" class="note" id="note" placeholder="Nota (facoltativa)" aria-label="Nota">
+    <input type="text" class="note" id="note" placeholder="Nota per la discussione (facoltativa)" aria-label="Nota">
     <div class="nav">
-      <button class="btn" id="prev" aria-label="Record precedente">←</button>
-      <button class="btn" id="next" aria-label="Record successivo">→</button>
+      <button class="btn" id="prev" aria-label="Record precedente"><svg class="icon" aria-hidden="true"><use href="#i-caret-left"/></svg><span>Precedente</span></button>
+      <button class="btn" id="next" aria-label="Record successivo"><span>Successivo</span><svg class="icon" aria-hidden="true"><use href="#i-caret-right"/></svg></button>
     </div>
   </div>
 </div>
@@ -415,7 +708,7 @@ const FORM_STAGES = {
     command: "sysrev rob assign", title: "Rischio di bias", commit: "Rischio di bias", values: "giudizi", agreed: "Giudizi concordati",
     help: [
       "Apri uno studio: a sinistra c'è il testo, a destra i domini dello strumento indicato accanto allo studio (per esempio RoB 2). "
-        + "Per ogni dominio scegli il giudizio e scrivi la motivazione; con 📎 colleghi le frasi del testo su cui si basa. "
+        + "Per ogni dominio scegli il giudizio e scrivi la motivazione; con «Fonte» colleghi le frasi del testo su cui si basa. "
         + "Tieni aperto lo strumento ufficiale, con le domande guida.",
       "Il giudizio complessivo viene proposto (il peggiore tra i domini): puoi accettarlo o cambiarlo. Le schede si salvano da sole; "
         + "alla fine clicca «Segna come completata».",
@@ -436,6 +729,7 @@ const DECISION_WORDS = {
 
 const S = {
   repo: "", token: "", login: "", branch: "main", stage: "title_abstract", stages: [],
+  coordinator: false,  // admin of the repository: sees the commands and the links to the files on GitHub
   mdFiles: new Set(), pdfFiles: new Set(), mdCache: new Map(), pdfUrl: null, view: "text",
   state: null, records: new Map(), mine: [],
   decisions: new Map(), decisionsSha: null, dirty: new Set(),
@@ -466,6 +760,23 @@ function el(tag, props = {}, ...children) {
     node.append(child instanceof Node ? child : document.createTextNode(String(child)));
   }
   return node;
+}
+
+// An icon of the sprite at the top of the page.
+function icon(name) {
+  const ns = "http://www.w3.org/2000/svg";
+  const svg = document.createElementNS(ns, "svg");
+  svg.setAttribute("class", "icon");
+  svg.setAttribute("aria-hidden", "true");
+  const use = document.createElementNS(ns, "use");
+  use.setAttribute("href", `#i-${name}`);
+  svg.append(use);
+  return svg;
+}
+
+// A link to another site, opened in a new tab.
+function extLink(href, label, cls = "ext") {
+  return el("a", { class: cls, href, target: "_blank", rel: "noopener" }, label, icon("arrow-up-right"));
 }
 
 function num(recordId) { return parseInt(String(recordId).slice(1), 10) || 0; }
@@ -781,7 +1092,7 @@ function persistPending() {
 function setSaveState(kind, text) {
   const badge = $("saveState");
   badge.hidden = false;
-  badge.className = kind === "error" ? "save error" : "save";
+  badge.className = kind === "error" ? "save error" : kind === "saved" ? "save" : "save pending";
   badge.textContent = text;
   badge.title = kind === "error" ? "Le decisioni sono al sicuro in questo browser: verranno salvate appena possibile." : "";
 }
@@ -901,38 +1212,73 @@ function safeUrl(url) { return /^https?:\/\//i.test(url || "") ? url : null; }
 
 function recordLinks(record) {
   const links = [];
-  if (record.pmid) links.push(el("a", { href: `https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(record.pmid)}/`, target: "_blank", rel: "noopener", text: "PubMed" }));
-  if (record.doi) links.push(el("a", { href: `https://doi.org/${encodeURI(record.doi)}`, target: "_blank", rel: "noopener", text: `DOI ${record.doi}` }));
-  if (record.pmcid) links.push(el("a", { href: `https://pmc.ncbi.nlm.nih.gov/articles/${encodeURIComponent(record.pmcid)}/`, target: "_blank", rel: "noopener", text: "Full text PMC" }));
-  if (!record.pmid && !record.doi && safeUrl(record.url)) links.push(el("a", { href: safeUrl(record.url), target: "_blank", rel: "noopener", text: "Link" }));
+  if (record.pmid) links.push(extLink(`https://pubmed.ncbi.nlm.nih.gov/${encodeURIComponent(record.pmid)}/`, "PubMed"));
+  if (record.doi) links.push(extLink(`https://doi.org/${encodeURI(record.doi)}`, `DOI ${record.doi}`));
+  if (record.pmcid) links.push(extLink(`https://pmc.ncbi.nlm.nih.gov/articles/${encodeURIComponent(record.pmcid)}/`, "Full text PMC"));
+  if (!record.pmid && !record.doi && safeUrl(record.url)) links.push(extLink(safeUrl(record.url), "Link"));
   return links;
 }
 
-function recordBody(record) {
+// A structured abstract ("BACKGROUND: … METHODS: …" on one line, as in PubMed) is split into its sections.
+const ABSTRACT_LABEL = /(?:^|(?<=[.;:!?)\]]\s+))((?:[A-Z][A-Z0-9'&/,-]*)(?:\s+[A-Z][A-Z0-9'&/,-]*){0,4}):\s+/g;
+
+function abstractParagraphs(text) {
+  const out = [];
+  for (const paragraph of text.split("\n").filter((p) => p.trim())) {
+    const labels = [...paragraph.matchAll(ABSTRACT_LABEL)].filter((m) => m[1].replace(/[^A-Z]/g, "").length >= 4);
+    if (labels.length < 2) { out.push(el("p", {}, highlighted(paragraph))); continue; }
+    if (labels[0].index > 0) out.push(el("p", {}, highlighted(paragraph.slice(0, labels[0].index).trim())));
+    labels.forEach((match, i) => {
+      const end = i + 1 < labels.length ? labels[i + 1].index : paragraph.length;
+      out.push(el("p", {}, el("span", { class: "ab-label", text: match[1].toLowerCase() }),
+        highlighted(paragraph.slice(match.index + match[0].length, end).trim())));
+    });
+  }
+  return out;
+}
+
+// The pieces of a record, put together differently in the screening, the conflicts and the full-text pane.
+function recordParts(record) {
   const authors = (record.authors || "").split(";").map((a) => a.trim()).filter(Boolean);
   const shownAuthors = authors.length > 8 ? `${authors.slice(0, 8).join("; ")} … (+${authors.length - 8})` : authors.join("; ");
-  const source = [record.journal, record.year,
-    record.volume ? `${record.volume}${record.issue ? `(${record.issue})` : ""}` : "", record.pages]
-    .filter(Boolean).join(" · ");
+  const issue = [record.volume ? `${record.volume}${record.issue ? `(${record.issue})` : ""}` : "", record.pages]
+    .filter(Boolean).join(": ");
   const types = (record.publication_types || "").split(";").map((t) => t.trim()).filter(Boolean);
-  const abstract = (record.abstract || "").split("\n").filter(Boolean);
+  const abstract = abstractParagraphs(record.abstract || "");
   const language = (record.language || "").toLowerCase();
+  const otherLanguage = language && !["eng", "english", "en"].includes(language);
   const extra = [];
-  if (language && !["eng", "english", "en"].includes(language)) extra.push(el("div", {}, "Lingua: ", record.language));
-  if (record.keywords) extra.push(el("div", {}, "Parole chiave: ", highlighted(record.keywords)));
-  if (record.mesh_terms) extra.push(el("div", {}, "MeSH: ", record.mesh_terms));
+  if (record.keywords) extra.push(el("div", {}, el("b", { text: "Parole chiave: " }), highlighted(record.keywords)));
+  if (record.mesh_terms) extra.push(el("div", {}, el("b", { text: "MeSH: " }), record.mesh_terms));
   const abstractBlock = el("div", { class: "abstract" },
-    abstract.length ? abstract.map((p) => el("p", {}, highlighted(p))) : el("p", { class: "muted", text: "Abstract non disponibile." }));
-  return [
-    el("div", { class: "record-meta" }, el("span", { class: "badge", text: record.record_id }),
-      types.map((t) => el("span", { class: "badge", text: t }))),
-    el("h2", {}, highlighted(record.title || "(senza titolo)")),
-    shownAuthors ? el("div", { class: "authors", text: shownAuthors }) : null,
-    source ? el("div", { class: "source", text: source }) : null,
-    S.stage !== "title_abstract" ? el("details", {}, el("summary", { class: "small", text: "Abstract" }), abstractBlock) : abstractBlock,
-    extra.length ? el("div", { class: "extra" }, extra) : null,
-    el("div", { class: "links" }, recordLinks(record)),
-  ];
+    abstract.length ? abstract : el("p", { class: "muted", text: "Abstract non disponibile." }));
+  const fact = (label, value, cls) => value ? el("div", {}, el("dt", { text: label }), el("dd", { class: cls, text: value })) : null;
+  const where = [record.year, issue].filter(Boolean).join(" · ");
+  return {
+    title: el("h2", { class: "record-title" }, highlighted(record.title || "(senza titolo)")),
+    authors: shownAuthors ? el("p", { class: "authors", text: shownAuthors }) : null,
+    source: record.journal || where
+      ? el("p", { class: "source" }, record.journal ? el("span", { class: "journal", text: record.journal }) : null,
+        record.journal && where ? " · " : "", where)
+      : null,
+    abstract: S.stage !== "title_abstract"
+      ? el("details", { class: "abstract-toggle" }, el("summary", { text: "Abstract" }), abstractBlock) : abstractBlock,
+    extra: extra.length ? el("div", { class: "extra" }, extra) : null,
+    facts: el("dl", { class: "facts" },
+      fact("Rivista", record.journal, "journal"), fact("Anno", record.year), fact("Volume e pagine", issue),
+      fact("Tipo di pubblicazione", types.join(", ")), otherLanguage ? fact("Lingua", record.language) : null,
+      fact("Identificativo", record.record_id, "rid")),
+    links: el("div", { class: "links" }, recordLinks(record)),
+  };
+}
+
+// The record in the screening: the reading column (title, authors, abstract, and the full text when there is
+// one) and the facts of the article on the side.
+function recordBody(record, more = []) {
+  const p = recordParts(record);
+  return [el("div", { class: "record-grid" },
+    el("div", { class: "record-main" }, p.title, p.authors, p.abstract, p.extra, more),
+    el("aside", { class: "record-rail", "aria-label": "Dati dell'articolo" }, p.facts, p.links))];
 }
 
 // ---------------------------------------------------------------- Markdown (full texts)
@@ -1056,7 +1402,7 @@ async function showPdf(id, container) {
     if (S.currentId !== id) return;
     container.replaceChildren(
       el("iframe", { class: "pdf", src: S.pdfUrl, title: "PDF dell'articolo" }),
-      el("p", { class: "small" }, el("a", { href: S.pdfUrl, target: "_blank", rel: "noopener", text: "Apri il PDF in una nuova scheda" })));
+      el("p", { class: "small" }, extLink(S.pdfUrl, "Apri il PDF in una nuova scheda")));
   } catch (error) {
     container.replaceChildren(el("p", { class: "muted", text: `PDF non caricato: ${explain(error)}` }));
   }
@@ -1082,7 +1428,7 @@ function fullTextPanel(id) {
   const hasPdf = S.pdfFiles.has(id);
   const container = el("div", { class: "fulltext" });
   let view = S.view === "pdf" && hasPdf ? "pdf" : hasText ? "text" : hasPdf ? "pdf" : "none";
-  const tabs = el("div", { class: "ft-tabs" });
+  const tabs = el("div", { class: "tabs ft-tabs", role: "group", "aria-label": "Testo o PDF" });
   const select = (next, chosen = false) => {
     view = next;
     if (chosen) S.view = next;  // remember only what the reviewer picked, not the fallback
@@ -1118,7 +1464,7 @@ function updateProgress() {
   const done = S.mine.filter((id) => S.decisions.has(id)).length;
   const total = S.mine.length;
   $("progressBar").style.width = total ? `${(100 * done) / total}%` : "0";
-  $("user").textContent = `${S.login} · ${done}/${total}`;
+  $("myProgress").textContent = total ? `Hai valutato ${fmtN(done)} di ${plural(total, "record", "record")}` : "";
 }
 
 function renderScreen() {
@@ -1138,13 +1484,16 @@ function renderScreen() {
   if (!record) {
     decideBar.hidden = true;
     const allDone = S.mine.length && S.mine.every((id) => S.decisions.has(id));
-    card.append(el("p", { text: allDone && S.filter === "todo"
-      ? "Hai valutato tutti i tuoi record. Grazie! Puoi rivederli scegliendo \"Tutti\"."
-      : "Nessun record da mostrare con questo filtro." }));
+    card.append(allDone && S.filter === "todo"
+      ? el("div", { class: "empty-state" }, el("h2", { text: "Hai valutato tutti i tuoi record" }),
+        el("p", { text: "Grazie. Puoi rivederli scegliendo «Tutti» nel menu qui sopra: finché lo screening è aperto puoi ancora cambiare le decisioni." }),
+        el("a", { class: "btn", href: homeUrl(), onclick: (event) => { event.preventDefault(); navigate(homeUrl()); } },
+          icon("arrow-left"), "Torna alla panoramica"))
+      : el("div", { class: "empty-state" }, el("h2", { text: "Nessun record" }),
+        el("p", { text: "Nessun record da mostrare con questo filtro o con questa ricerca." })));
     return;
   }
-  card.append(...recordBody(record).filter(Boolean));
-  if (isFullText()) card.append(...fullTextPanel(record.record_id));
+  card.append(...recordBody(record, isFullText() ? fullTextPanel(record.record_id) : []));
   decideBar.hidden = false;
   const current = S.decisions.get(record.record_id);
   for (const button of document.querySelectorAll(".choice")) {
@@ -1176,7 +1525,7 @@ function decide(decision, reason) {
       S.awaitingReason = true;
       $("reason").classList.add("missing");
       $("reason").focus();
-      showBanner("Scegli il motivo di esclusione (menu accanto ai pulsanti, oppure i tasti 1–9).");
+      showBanner("Scegli il motivo di esclusione (menu accanto ai pulsanti, oppure i tasti da 1 a 9).");
       return;
     }
   }
@@ -1266,7 +1615,10 @@ function renderConflicts() {
   }
   $("conflictCount").textContent = `${open} da risolvere · ${resolved} risolti`;
   $("tabConflicts").textContent = `Conflitti (${open})`;
-  if (!shown) list.append(el("div", { class: "card muted", text: "Nessun conflitto da mostrare con questi filtri." }));
+  if (!shown) {
+    list.append(el("div", { class: "card empty-state" }, el("h2", { text: open ? "Nessun conflitto qui" : "Nessun conflitto da risolvere" }),
+      el("p", { text: open ? "Nessun conflitto da mostrare con questi filtri." : "I revisori erano d'accordo su tutti i record, oppure i conflitti sono già risolti." })));
+  }
 }
 
 function conflictCard(id, outcome, reviewers) {
@@ -1283,29 +1635,31 @@ function conflictCard(id, outcome, reviewers) {
     }
     saveConsensus(id, decision, note.value.trim(), decision === "exclude" && reasonSelect ? reasonSelect.value : "");
   };
-  const body = recordBody(record);
-  return el("article", { class: "card record", "data-record": id },
-    body.slice(0, 4),
-    el("details", {}, el("summary", { class: "small", text: "Abstract e dettagli" }), body.slice(4)),
-    el("ul", { class: "decision-list" }, reviewers.map((reviewer) => {
+  const p = recordParts(record);
+  return el("article", { class: "card conflict", "data-record": id },
+    p.title, p.authors, p.source,
+    el("ul", { class: "decision-list", "aria-label": "Decisioni dei revisori" }, reviewers.map((reviewer) => {
       const row = outcome.values[reviewer];
-      return el("li", {}, el("strong", { text: reviewer }), ": ",
+      return el("li", {}, el("span", { class: "who", text: reviewer }),
         row ? el("span", { class: `tag ${row.decision}`, text: LABELS[row.decision] }) : el("span", { class: "muted", text: "nessuna decisione" }),
-        row?.reason ? el("span", { class: "reason" }, ` (${row.reason})`) : null,
-        row?.note ? el("span", { class: "muted" }, " — ", row.note) : null);
+        row?.reason ? el("span", { class: "reason", text: row.reason }) : null,
+        row?.note ? el("span", { class: "muted", text: `Nota: ${row.note}` }) : null);
     })),
     agreed
-      ? el("p", {}, "Decisione concordata: ", el("span", { class: `tag ${agreed.decision}`, text: LABELS[agreed.decision] }),
+      ? el("p", { class: "agreed" }, "Decisione concordata: ", el("span", { class: `tag ${agreed.decision}`, text: LABELS[agreed.decision] }),
           agreed.reason ? el("span", { class: "reason" }, ` (${agreed.reason})`) : null,
-          el("span", { class: "muted small", text: ` (registrata da ${agreed.decided_by}${agreed.updated_at ? `, ${formatDate(agreed.updated_at)}` : ""})` }))
+          el("span", { class: "muted small", text: ` registrata da ${agreed.decided_by}${agreed.updated_at ? ` il ${formatDate(agreed.updated_at)}` : ""}` }))
       : null,
     editable
       ? el("div", { class: "consensus" },
-          el("button", { class: "choice include", "aria-pressed": String(agreed?.decision === "include"), onclick: () => choose("include") }, "Includi"),
-          el("button", { class: "choice exclude", "aria-pressed": String(agreed?.decision === "exclude"), onclick: () => choose("exclude") }, "Escludi"),
+          el("button", { class: "choice include", "aria-pressed": String(agreed?.decision === "include"), onclick: () => choose("include") }, icon("check-bold"), "Includi"),
+          el("button", { class: "choice exclude", "aria-pressed": String(agreed?.decision === "exclude"), onclick: () => choose("exclude") }, icon("x-bold"), "Escludi"),
           reasonSelect,
           note)
       : el("p", { class: "muted small", text: `La decisione spetta a ${S.state.arbiter}.` }),
+    el("details", { class: "details-toggle" }, el("summary", { text: "Abstract e dati dell'articolo" }),
+      el("div", { class: "record-grid" }, el("div", { class: "record-main" }, p.abstract, p.extra),
+        el("aside", { class: "record-rail" }, p.facts, p.links))),
   );
 }
 
@@ -1866,7 +2220,9 @@ async function startExtraction(stateText) {
   const canCompare = EX.closed && isDouble();
   if (!EX.mine.length && !canCompare) {
     showView(null);
-    return showBanner(`Non hai studi assegnati nella ${words().name}. Chiedi a chi coordina di controllare che "${S.login}" sia tra i revisori in review.yml e di lanciare "${words().command}".`, true);
+    return showBanner(S.coordinator
+      ? `Non hai studi assegnati nella ${words().name}. Controlla che "${S.login}" sia tra i revisori in review.yml e lancia "${words().command}".`
+      : `Non hai studi assegnati nella ${words().name}. Chiedi a chi coordina di aggiungerti tra i revisori (il tuo nome utente è "${S.login}").`, true);
   }
   if (EX.closed) {
     showBanner(canCompare
@@ -1929,7 +2285,7 @@ function currentList() { return EX.tab === "compare" ? compareIds() : EX.mine; }
 function updateExProgress() {
   const done = EX.mine.filter((id) => myStatus(id)[0] === "done").length;
   $("progressBar").style.width = EX.mine.length ? `${(100 * done) / EX.mine.length}%` : "0";
-  $("user").textContent = `${S.login} · ${done}/${EX.mine.length}`;
+  $("myProgress").textContent = EX.mine.length ? `Hai completato ${fmtN(done)} di ${plural(EX.mine.length, "scheda", "schede")}` : "";
   if (EX.closed && isDouble()) {
     const open = [...EX.extractors.keys()].filter((id) => exOutcome(id).kind === "open").length;
     $("exTabCompare").textContent = `Differenze (${open})`;
@@ -1950,7 +2306,9 @@ function exShowList() {
   updateExProgress();
   const list = $("exList");
   list.replaceChildren();
+  list.className = "list";
   const ids = currentList();
+  const statusIcons = { done: "check-circle", draft: "hourglass-medium", waiting: "hourglass-medium", open: "warning-circle" };
   for (const id of ids) {
     const record = S.records.get(id) || { record_id: id };
     let status;
@@ -1963,19 +2321,22 @@ function exShowList() {
     const role = EX.roles.get(id) === "verifier" ? el("span", { class: "badge", text: "Verifica" }) : null;
     const toolId = EX.state.forms ? EX.toolOf.get(id) || Object.keys(EX.tools)[0] : "";
     const tool = toolId ? el("span", { class: "badge", text: EX.tools[toolId]?.name || toolId }) : null;
-    list.append(el("button", { class: "card ex-item", "data-record": id, onclick: () => exOpen(id) },
-      el("span", { class: "badge", text: id }),
-      el("strong", { text: studyLabel(record) }),
-      el("span", { class: "grow muted", text: record.title || "" }),
-      tool,
-      role,
-      el("span", { class: `status ${status[0]}`, text: status[1] })));
+    list.append(el("button", { class: "ex-item", "data-record": id, onclick: () => exOpen(id) },
+      el("span", { class: "study" }, studyLabel(record), el("small", { text: id })),
+      el("span", { class: "grow", text: record.title || "" }),
+      el("span", { class: "tags" }, tool, role),
+      el("span", { class: `status ${status[0]}` }, statusIcons[status[0]] ? icon(statusIcons[status[0]]) : null, status[1]),
+      el("span", { class: "chev" }, icon("caret-right"))));
   }
   if (EX.tab === "compare") {
     const all = [...EX.extractors.keys()].map((id) => exOutcome(id).kind);
     $("exCompareCount").textContent = `${all.filter((k) => k === "open").length} da risolvere · ${all.filter((k) => k === "resolved").length} risolti`;
   }
-  if (!ids.length) list.append(el("div", { class: "card muted", text: EX.tab === "compare" ? "Nessuno studio da mostrare con questo filtro." : "Nessuno studio assegnato." }));
+  if (!ids.length) {
+    list.className = "";
+    list.append(el("div", { class: "card empty-state" }, el("h2", { text: EX.tab === "compare" ? "Nessuno studio" : "Nessuno studio assegnato" }),
+      el("p", { text: EX.tab === "compare" ? "Nessuno studio da mostrare con questo filtro." : "Quando chi coordina ti assegna degli studi, li trovi qui." })));
+  }
 }
 
 function exOpen(id) {
@@ -1989,8 +2350,9 @@ function exOpen(id) {
   const box = el("div", { class: "ex-form card" }, el("p", { class: "muted", text: "Caricamento della scheda…" }));
   EX.formBox = box;
   $("exBar").hidden = true;
+  const p = recordParts(record);
   $("exStudy").replaceChildren(el("div", { class: "ex-layout" },
-    el("div", { class: "ex-text card record" }, ...recordBody(record).filter(Boolean), ...fullTextPanel(id)),
+    el("div", { class: "ex-text card" }, p.title, p.authors, p.source, p.abstract, p.extra, p.links, ...fullTextPanel(id)),
     box));
   window.scrollTo(0, 0);
   const checkAi = aiExtractor(id) && EX.roles.get(id) === "verifier" && S.mdFiles.has(id);
@@ -2066,7 +2428,10 @@ function formContent(ctx) {
   }
   const tool = EX.tools[EX.toolOf.get(EX.current)] || (EX.state.forms ? Object.values(EX.tools)[0] : null);
   if (tool) out.push(el("p", { class: "small muted", text: `Strumento: ${tool.name}` }));
-  if (ctx.doc.status === "done") out.push(el("p", { class: "status done", text: ctx.mode === "consensus" ? "Valori definitivi" : ctx.mode === "verify" ? "Verificata" : "Completata" }));
+  if (ctx.doc.status === "done") {
+    out.push(el("p", { class: "status done" }, icon("check-circle"),
+      ctx.mode === "consensus" ? "Valori definitivi" : ctx.mode === "verify" ? "Verificata" : "Completata"));
+  }
 
   for (const item of EX.form.study || []) {
     if (item.section) {
@@ -2098,9 +2463,10 @@ function aiSummaryLine(ctx) {
   const parts = [`Valori estratti da ${ctx.ai}: ${values}`];
   if (nosource) parts.push(`senza fonte: ${nosource}`);
   if (notfound) parts.push(`fonte non trovata nel testo: ${notfound}`);
-  const text = parts.join(" · ") + (nosource || notfound ? " (segnati con ⚠: controllali con più attenzione)." : ".");
   const note = ctx.aiText === null ? " Il testo in Markdown non c'è: le fonti non si possono controllare." : "";
-  return el("p", { class: `small ${nosource || notfound ? "warn" : "muted"}`, id: "aiSummary", text: text + note });
+  if (!nosource && !notfound) return el("p", { class: "small muted", id: "aiSummary", text: `${parts.join(" · ")}.${note}` });
+  return el("p", { class: "small warn", id: "aiSummary" }, icon("warning"),
+    el("span", {}, `${parts.join(" · ")}. I valori da controllare con più attenzione sono segnati con il triangolo.${note}`));
 }
 
 function resultsSection(ctx, names) {
@@ -2128,7 +2494,7 @@ function resultsSection(ctx, names) {
       ctx.doc.results.push({});
       exTouch(ctx.key);
       rerenderForm();
-    } }, "+ Aggiungi una riga"));
+    } }, icon("plus"), "Aggiungi una riga"));
   }
   return out;
 }
@@ -2170,13 +2536,13 @@ function rowBox(ctx, row, index, names, theirs, refreshMissing) {
       ctx.doc.results.splice(index + 1, 0, copy);
       exTouch(ctx.key);
       rerenderForm();
-    } }, "Duplica"),
+    } }, icon("copy"), "Duplica"),
     el("button", { class: "btn small", type: "button", onclick: () => {
       if (!isEmptyRow(row) && !confirm("Togliere questa riga?")) return;
       ctx.doc.results.splice(index, 1);
       exTouch(ctx.key);
       rerenderForm();
-    } }, "Togli la riga")) : null;
+    } }, icon("trash"), "Togli la riga")) : null;
   setNote();
   return el("div", { class: "ex-row" }, note, el("div", { class: "ex-row-grid" }, boxes), actions);
 }
@@ -2191,7 +2557,7 @@ function fieldBox(ctx, spec, cell, fid, others, onChange) {
     sourceLine.hidden = !cell.source;
     sourceLine.replaceChildren(...(cell.source ? ["Fonte: ", quote(cell.source)] : []));
     if (cell.source && ctx.editable) {
-      sourceLine.append(el("button", { class: "linklike", type: "button", title: "Togli la fonte", onclick: () => {
+      sourceLine.append(el("button", { class: "linklike", type: "button", title: "Togli la fonte", "aria-label": "Togli la fonte", onclick: () => {
         cell.source = "";
         exTouch(ctx.key);
         renderSource();
@@ -2211,14 +2577,14 @@ function fieldBox(ctx, spec, cell, fid, others, onChange) {
       const problem = ctx.ai ? aiSummary(spec, other, ctx.aiText) : "";
       box.classList.toggle("ai-warn", !!problem);
       if (problem) {
-        compareLine.append(el("span", { class: "warn", text: problem === "nosource"
-          ? `⚠ ${ctx.ai} non ha indicato da dove viene il valore`
-          : `⚠ la frase citata da ${ctx.ai} non è nel testo` }));
+        compareLine.append(el("span", { class: "warn" }, icon("warning"), problem === "nosource"
+          ? `${ctx.ai} non ha indicato da dove viene il valore`
+          : `la frase citata da ${ctx.ai} non è nel testo`));
         compareLine.hidden = false;
       }
       if (exNormalize(spec, other?.value) === mine) return;
       box.classList.add("changed");
-      compareLine.append(`${names[0]}: `, el("strong", { text: exDisplay(spec, other?.value) || "(vuoto)" }), " · corretto");
+      compareLine.append(`Corretto: ${names[0]} aveva scritto `, el("strong", { text: exDisplay(spec, other?.value) || "(vuoto)" }));
       if (other?.source && other.source !== cell.source) compareLine.append(quote(other.source));
     } else {
       if (spec.compare === false || !differs(spec, names.map((n) => cells[n]))) return;
@@ -2243,7 +2609,7 @@ function fieldBox(ctx, spec, cell, fid, others, onChange) {
   const input = fieldInput(ctx, spec, cell, fid, () => { decorate(); if (onChange) onChange(); });
   const attach = ctx.editable
     ? el("button", { class: "btn icon", type: "button", title: "Da dove viene il dato: collega la frase selezionata nel testo",
-        onclick: () => attachSource(ctx, cell, renderSource) }, "📎")
+        onclick: () => attachSource(ctx, cell, renderSource) }, icon("paperclip"), "Fonte")
     : null;
   box.append(el("label", { text: spec.label }), spec.help ? el("div", { class: "help", text: spec.help }) : "",
     el("div", { class: "ex-input" }, input, attach), sourceLine, compareLine);
@@ -2274,12 +2640,12 @@ function proposalLine(ctx, spec, cell) {
     return line;
   }
   if (cell.value === level.id) {
-    line.append("✓ È il giudizio peggiore tra i domini.");
+    line.append(icon("check"), " È il giudizio peggiore tra i domini.");
     return line;
   }
   const current = spec.scale.findIndex((l) => l.id === cell.value);
   line.append("Proposta: ", el("strong", { text: level.label }), " (il giudizio peggiore tra i domini)");
-  if (current >= 0 && current < spec.scale.indexOf(level)) line.append(el("span", { class: "warn", text: " · ⚠ quello scelto è meno grave" }));
+  if (current >= 0 && current < spec.scale.indexOf(level)) line.append(el("span", { class: "warn" }, icon("warning"), "quello scelto è meno grave"));
   if (ctx.editable) {
     line.append(el("button", { class: "btn small", type: "button", onclick: () => {
       cell.value = level.id;
@@ -2316,7 +2682,7 @@ function fieldInput(ctx, spec, cell, fid, after) {
     const current = String(cell.value || "");
     const known = options.find(([value]) => exNormalize(spec, value) === exNormalize(spec, current));
     const select = el("select", { disabled, "data-fid": fid, "aria-label": spec.label },
-      el("option", { value: "", text: "—" }),
+      el("option", { value: "", text: "Scegli…" }),
       options.map(([value, label]) => el("option", { value, text: label })),
       current && !known ? el("option", { value: current, text: `${current} (non in elenco)` }) : null);
     select.value = known ? known[0] : current;
@@ -2362,7 +2728,7 @@ function attachSource(ctx, cell, done) {
   EX.selection = "";
   if (text) window.getSelection().removeAllRanges();  // used: a new clip needs a new selection
   else {
-    text = prompt("Per collegare una frase: selezionala nel testo a sinistra e poi clicca 📎.\n\nOppure scrivi qui da dove viene il dato (per esempio: Tabella 2, pagina 5):", cell.source || "");
+    text = prompt("Per collegare una frase: selezionala nel testo a sinistra e poi clicca «Fonte».\n\nOppure scrivi qui da dove viene il dato (per esempio: Tabella 2, pagina 5):", cell.source || "");
     if (text === null) return;
   }
   cell.source = text.replace(/\s+/g, " ").trim().slice(0, 1000);
@@ -2407,12 +2773,17 @@ function updateExBar() {
   $("exNext").disabled = index < 0 || index >= ids.length - 1;
   const ctx = exContext(EX.current);
   const button = $("exDone");
+  const state = $("exState");
   button.hidden = !ctx.doc || !ctx.editable;
+  const done = !!ctx.doc && ctx.doc.status === "done";
+  // [button while to do, state once done, button once done]
+  const labels = { extract: ["Segna come completata", "Completata", "Riapri"], verify: ["Segna come verificata", "Verificata", "Riapri"],
+    consensus: ["Segna come definitivi", "Definitivi", "Riapri"] }[ctx.mode] || ["", "", ""];
+  state.hidden = !done;
+  state.className = "ex-state done";
+  state.replaceChildren(icon("check-circle"), labels[1]);
   if (button.hidden) return;
-  const done = ctx.doc.status === "done";
-  const labels = { extract: ["Segna come completata", "Completata ✓ · riapri"], verify: ["Segna come verificata", "Verificata ✓ · riapri"],
-    consensus: ["Segna come definitivi", "Definitivi ✓ · riapri"] }[ctx.mode];
-  button.textContent = labels[done ? 1 : 0];
+  button.replaceChildren(...(done ? [icon("arrow-counter-clockwise"), labels[2]] : [icon("check"), labels[0]]));
   button.className = done ? "btn" : "btn primary";
 }
 
@@ -2454,18 +2825,6 @@ async function navigate(search) {
   if (S.dirty.size) await saveNow();
   if (EX.dirty.size) await exSaveNow();
   location.search = search;
-}
-
-function checkIcon() {
-  const ns = "http://www.w3.org/2000/svg";
-  const svg = document.createElementNS(ns, "svg");
-  svg.setAttribute("viewBox", "0 0 16 16");
-  svg.setAttribute("aria-hidden", "true");
-  const path = document.createElementNS(ns, "path");
-  for (const [key, value] of Object.entries({ d: "M3 8.5l3.2 3L13 4.8", fill: "none", stroke: "currentColor",
-    "stroke-width": "2.2", "stroke-linecap": "round", "stroke-linejoin": "round" })) path.setAttribute(key, value);
-  svg.append(path);
-  return svg;
 }
 
 function meter(share) {
@@ -2544,26 +2903,29 @@ async function homeData(stateFiles) {
 
 function buildPhases(d) {
   const csv = (path) => parseCSV(d.text[path] || "");
-  const link = (path, folder = false) => ({ href: githubUrl(path, folder) });
+  // Links to files on GitHub are shown to whoever coordinates; "public" ones (the protocol) to everyone.
+  const link = (path, folder = false, extra = {}) => ({ href: githubUrl(path, folder), ...extra });
   const tally = (rows) => {
     const count = (kind) => rows.filter((r) => r.decision === kind).length;
     return { rows: rows.length, include: count("include"), exclude: count("exclude"), conflict: count("conflict") };
   };
   const phases = [];
 
+  // detail: for everyone, in plain words; coordDetail: what whoever coordinates sees instead; command: for them too.
   const imports = csv("search/imports.csv");
   const identified = imports.reduce((n, r) => n + (parseInt(r.records, 10) || 0), 0);
   const databases = [...new Set(imports.map((r) => r.database).filter(Boolean))];
   const lastSearch = imports.map((r) => r.search_date || "").filter(Boolean).sort().pop();
   phases.push({
     id: "protocol", group: "plan", title: "Protocollo", who: "Tutto il gruppo", state: imports.length ? "done" : "open",
-    detail: "Domanda di ricerca, criteri di inclusione ed esclusione", action: link("protocol/protocol.md"),
+    detail: "Domanda di ricerca, criteri di inclusione ed esclusione",
+    action: link("protocol/protocol.md", false, { public: true, label: "Leggi" }),
   });
   phases.push({
     id: "search", group: "identify", title: "Ricerca bibliografica", who: "Chi coordina",
     state: imports.length ? "done" : "todo",
-    detail: imports.length ? databases.join(", ") + (lastSearch ? ` · ricerca del ${formatDate(lastSearch)}` : "")
-      : "Chi coordina importa gli export delle banche dati con",
+    detail: imports.length ? databases.join(", ") + (lastSearch ? `, ricerca del ${formatDate(lastSearch)}` : "")
+      : "Si importano gli export delle banche dati",
     command: imports.length ? "" : "sysrev import",
     figure: imports.length ? [identified, "record identificati"] : null, action: link("search/strategy.md"),
   });
@@ -2576,8 +2938,9 @@ function buildPhases(d) {
   phases.push({
     id: "dedup", group: "identify", title: "Duplicati", who: "Chi coordina",
     state: !imports.length ? "todo" : pendingDuplicates || !recordsReady ? "open" : "done",
-    detail: pendingDuplicates ? `${plural(pendingDuplicates, "coppia", "coppie")} da decidere, poi`
+    detail: pendingDuplicates ? `${plural(pendingDuplicates, "coppia", "coppie")} di possibili duplicati da decidere`
       : imports.length ? "Record unici, pronti per lo screening" : "Dopo l'import delle ricerche",
+    coordDetail: pendingDuplicates ? `${plural(pendingDuplicates, "coppia", "coppie")} da decidere in records/duplicates_to_check.csv` : "",
     command: pendingDuplicates ? "sysrev dedup" : "",
     figure: unique && !pendingDuplicates ? [unique, "record unici"] : null,
     action: pendingDuplicates ? link("records/duplicates_to_check.csv") : recordsReady ? link("records", true) : null,
@@ -2586,16 +2949,16 @@ function buildPhases(d) {
   const screening = (stage, title, command) => {
     const state = d.states[stage];
     const base = { id: stage, group: "select", title, who: "Revisori" };
-    if (!state) return { ...base, state: "todo", detail: "Chi coordina la avvia con", command };
+    if (!state) return { ...base, state: "todo", detail: "La avvia chi coordina", command };
     const mine = d.mine[stage];
     const reviewers = (state.reviewers || []).length;
     if (state.status !== "closed") {
       return { ...base, state: "open", action: { stage }, mine,
-        detail: `${plural(mine.all, "record", "record")}` + (reviewers ? ` · ${plural(reviewers, "revisore", "revisori")}` : "") };
+        detail: `${plural(mine.all, "record", "record")}` + (reviewers ? `, ${plural(reviewers, "revisore", "revisori")}` : "") };
     }
     const t = tally(csv(`screening/${stage}/results.csv`));
     return { ...base, action: { stage }, state: t.conflict ? "open" : "done",
-      detail: t.conflict ? `Chiuso · ${plural(t.conflict, "conflitto", "conflitti")} da risolvere` : t.rows ? plural(t.exclude, "escluso", "esclusi") : "Chiuso",
+      detail: t.conflict ? `Chiuso, ${plural(t.conflict, "conflitto", "conflitti")} da risolvere` : t.rows ? plural(t.exclude, "escluso", "esclusi") : "Chiuso",
       figure: t.rows ? [t.include, stage === "full_text" ? (t.include === 1 ? "studio incluso" : "studi inclusi") : "inclusi"] : null };
   };
   phases.push(screening("title_abstract", "Screening di titolo e abstract", "sysrev screening assign"));
@@ -2609,8 +2972,8 @@ function buildPhases(d) {
   phases.push({
     id: "retrieval", group: "select", title: "Recupero dei full text", who: "Chi coordina",
     state: d.states.full_text ? "done" : retrievalOpen ? "open" : "todo",
-    detail: retrievalOpen && !available ? "Chi coordina li cerca con"
-      : sought ? `Su ${plural(sought, "record incluso", "record inclusi")}` + (unavailable ? ` · ${plural(unavailable, "non reperibile", "non reperibili")}` : "")
+    detail: retrievalOpen && !available ? "Chi coordina cerca i testi completi degli articoli inclusi"
+      : sought ? `Su ${plural(sought, "record incluso", "record inclusi")}` + (unavailable ? `, ${plural(unavailable, "non reperibile", "non reperibili")}` : "")
       : "Dopo lo screening di titolo e abstract",
     command: retrievalOpen && !available ? "sysrev fulltext fetch" : "",
     figure: available ? [available, "disponibili"] : null, action: available ? link("fulltext", true) : null,
@@ -2620,7 +2983,7 @@ function buildPhases(d) {
   const form = (stage, title, command, modes) => {
     const state = d.states[stage];
     const base = { id: stage, group: "data", title, who: "Revisori" };
-    if (!state) return { ...base, state: "todo", detail: "Chi coordina la avvia con", command };
+    if (!state) return { ...base, state: "todo", detail: "La avvia chi coordina", command };
     const mine = d.mine[stage];
     const closed = state.status === "closed";
     const tools = Object.values(state.tools || {}).map((t) => t.name).filter(Boolean);
@@ -2639,7 +3002,8 @@ function buildPhases(d) {
     id: "meta", group: "synthesis", title: "Meta-analisi e forest plot", who: "Chi coordina",
     state: analyses.length ? "done" : "todo",
     detail: analyses.length ? analyses.slice(0, 3).map((a) => a.title || a.id).join(" · ") + (analyses.length > 3 ? " …" : "")
-      : extractionClosed ? "Analisi in analysis/analyses.yml, poi" : "Dopo l'estrazione dei dati",
+      : extractionClosed ? "La prepara chi coordina" : "Dopo l'estrazione dei dati",
+    coordDetail: !analyses.length && extractionClosed ? "Le analisi si scrivono in analysis/analyses.yml" : "",
     command: !analyses.length && extractionClosed ? "sysrev meta" : "",
     figure: analyses.length ? [analyses.length, "meta-analisi"] : null,
     action: analyses.length ? link("analysis/results/meta_analysis.md") : null,
@@ -2649,8 +3013,9 @@ function buildPhases(d) {
   phases.push({
     id: "grade", group: "synthesis", title: "GRADE e Summary of findings", who: "Chi coordina",
     state: graded.length ? (unverified ? "open" : "done") : "todo",
-    detail: graded.length ? (unverified ? `${plural(unverified, "outcome", "outcome")} da controllare in grade/grade.yml`
-      : "Certezza delle prove per ogni outcome") : analyses.length ? "Dopo la meta-analisi:" : "Dopo la meta-analisi",
+    detail: graded.length ? (unverified ? "Giudizi in corso di controllo" : "Certezza delle prove per ogni outcome")
+      : analyses.length ? "La prepara chi coordina" : "Dopo la meta-analisi",
+    coordDetail: unverified ? `${plural(unverified, "outcome", "outcome")} da controllare in grade/grade.yml` : "",
     command: !graded.length && analyses.length ? "sysrev grade" : "",
     figure: graded.length ? [graded.length, "outcome"] : null,
     action: graded.length ? link("grade/results/grade.md") : null,
@@ -2659,52 +3024,65 @@ function buildPhases(d) {
 }
 
 const hasTurn = (p) => Boolean(p.mine && p.mine.total && p.mine.done < p.mine.total);
+const STATE_WORDS = { done: "Completata", open: "In corso", todo: "Da iniziare" };
 
 function stepItem(p, i, phases, current) {
   const li = el("li", { class: `step ${p.state}${i === current ? " current" : ""}` });
-  if (i > 0) li.style.setProperty("--line-in", phases[i - 1].state === "done" ? "var(--include)" : "var(--border)");
-  if (i < phases.length - 1) li.style.setProperty("--line-out", p.state === "done" ? "var(--include)" : "var(--border)");
-  const pills = [el("span", { class: `pill ${p.state}`, text: { done: "Completata", open: "In corso", todo: "Da iniziare" }[p.state] })];
-  if (hasTurn(p)) pills.push(el("span", { class: "pill turn", text: "Tocca a te" }));
-  pills.push(el("span", { class: "pill who", text: p.who }));
+  if (i > 0) li.style.setProperty("--line-in", phases[i - 1].state === "done" ? "var(--accent)" : "var(--border-strong)");
+  if (i < phases.length - 1) li.style.setProperty("--line-out", p.state === "done" ? "var(--accent)" : "var(--border-strong)");
+  const detail = (S.coordinator && p.coordDetail) || p.detail;
   const mine = p.mine && p.mine.total
     ? el("span", { class: "step-mine" }, `Hai ${p.mine.verb} ${fmtN(p.mine.done)} di ${plural(p.mine.total, ...p.mine.unit)}`,
       meter(p.mine.done / p.mine.total))
     : null;
   const main = el("span", { class: "step-main" },
-    el("span", { class: "step-head" }, el("span", { class: "step-title", text: p.title }), ...pills),
-    p.detail || p.command ? el("span", { class: "step-detail" }, p.detail || "", p.command ? " " : "",
-      p.command ? el("code", { class: "cmd", text: p.command }) : null) : null,
+    el("span", { class: "step-head" }, el("span", { class: "step-title", text: p.title }),
+      hasTurn(p) ? el("span", { class: "turn-tag", text: "Tocca a te" }) : null),
+    detail ? el("span", { class: "step-detail", text: detail }) : null,
+    el("span", { class: "step-meta", text: `${p.who} · ${STATE_WORDS[p.state]}` }),
+    S.coordinator && p.command ? el("span", { class: "step-cmd" }, "Nel Terminale: ", el("code", { class: "cmd", text: p.command })) : null,
     mine);
+  const stage = p.action?.stage;
+  const href = !stage && p.action?.href && (S.coordinator || p.action.public) ? p.action.href : null;
   const side = el("span", { class: "step-side" },
-    p.figure ? el("span", { class: "figure" }, `n = ${fmtN(p.figure[0])}`, el("small", { text: p.figure[1] })) : null,
-    p.action ? el("span", { class: "go", text: p.action.stage ? "Apri →" : "Su GitHub ↗" }) : null);
-  const body = p.action?.stage ? el("a", { class: "step-body", href: stageUrl(p.action.stage), "data-phase": p.id }, main, side)
-    : p.action ? el("a", { class: "step-body", href: p.action.href, target: "_blank", rel: "noopener", "data-phase": p.id }, main, side)
+    p.figure ? el("span", { class: "figure" }, el("b", { text: fmtN(p.figure[0]) }), el("small", { text: p.figure[1] })) : null,
+    stage ? el("span", { class: "btn small" }, "Apri", icon("arrow-right"))
+      : href ? el("span", { class: "go-link" }, p.action.label || "Su GitHub", icon("arrow-up-right")) : null);
+  const body = stage ? el("a", { class: "step-body stage", href: stageUrl(stage), "data-phase": p.id }, main, side)
+    : href ? el("a", { class: "step-body", href, target: "_blank", rel: "noopener", "data-phase": p.id }, main, side)
       : el("div", { class: "step-body", "data-phase": p.id }, main, side);
-  li.append(el("span", { class: "node", "aria-hidden": "true" }, p.state === "done" ? checkIcon() : String(i + 1)), body);
+  li.append(el("span", { class: "node", "aria-hidden": "true" }, p.state === "done" ? icon("check-bold") : String(i + 1)), body);
   return li;
 }
 
-function taskPanel(phases) {
-  const turn = phases.find(hasTurn);
-  if (turn) {
-    const left = turn.mine.total - turn.mine.done;
-    return el("div", { class: "task turn" },
-      el("div", { class: "grow" },
-        el("p", { class: "eyebrow", text: "Tocca a te" }),
-        el("p", {}, el("strong", { text: turn.title })),
-        el("p", { class: "small", text: `${left === 1 ? "Ti resta" : "Ti restano"} ${plural(left, ...turn.mine.unit)} su ${fmtN(turn.mine.total)}` }),
-        meter(turn.mine.done / turn.mine.total)),
-      el("a", { class: "btn primary", id: "continueButton", href: stageUrl(turn.id), text: turn.mine.done ? "Continua" : "Comincia" }));
-  }
-  const finished = phases.filter((p) => p.state === "open" && p.mine && p.mine.total);
-  const text = finished.length
-    ? `Hai finito la tua parte: ${finished.map((p) => p.title.toLowerCase()).join(" e ")}. La fase si chiude quando hanno finito tutti.`
-    : phases.every((p) => p.state === "done") ? "Tutte le fasi sono completate: i risultati sono su GitHub, nelle ultime due fasi."
+// What the person who opened the page has to do: one button per phase in which they are a reviewer, the next
+// one to do first and filled in.
+function workPanel(phases) {
+  const panel = el("aside", { class: "card work", "aria-labelledby": "workTitle" }, el("h2", { id: "workTitle", text: "Il tuo lavoro" }));
+  const mine = phases.filter((p) => p.state === "open" && p.mine && p.mine.total);
+  if (!mine.length) {
+    const text = phases.every((p) => p.state === "done") ? "Tutte le fasi sono completate: i risultati sono su GitHub."
       : "Quando chi coordina avvia una fase in cui sei revisore, la trovi qui.";
-  return el("div", { class: "task" }, el("div", { class: "grow" },
-    el("p", { class: "eyebrow", text: "Per ora niente da fare" }), el("p", { text })));
+    panel.append(el("div", { class: "nothing" }, el("strong", { text: "Per ora niente da fare" }), text));
+    return panel;
+  }
+  const next = mine.find(hasTurn);
+  panel.append(el("p", { text: next ? "Le fasi in cui sei revisore. Riprendi da qui:"
+    : "Hai finito la tua parte. La fase si chiude quando hanno finito tutti." }));
+  panel.append(el("div", { class: "work-list" }, mine.map((p) => {
+    const left = p.mine.total - p.mine.done;
+    const isNext = p === next;
+    return el("a", { class: `work-item${isNext ? " next" : ""}${left ? "" : " finished"}`, href: stageUrl(p.id),
+      id: isNext ? "continueButton" : null },
+      el("span", {},
+        el("span", { class: "work-title", text: p.title }),
+        el("span", { class: "work-count", text: left
+          ? `${left === 1 ? "Ti resta" : "Ti restano"} ${plural(left, ...p.mine.unit)} su ${fmtN(p.mine.total)}`
+          : `Hai finito: ${plural(p.mine.total, ...p.mine.unit)}` }),
+        meter(p.mine.done / p.mine.total)),
+      el("span", { class: isNext ? "btn primary" : "btn" }, left ? (p.mine.done ? "Continua" : "Comincia") : "Rivedi", icon("arrow-right")));
+  })));
+  return panel;
 }
 
 function renderHome(d) {
@@ -2715,51 +3093,65 @@ function renderHome(d) {
   const done = phases.filter((p) => p.state === "done").length;
   const title = Object.values(d.states).find((state) => state && state.title)?.title || S.repo.split("/").pop();
   document.title = `${title} · sysrev`;
-  $("brandName").textContent = "sysrev";
-  $("stageLabel").textContent = "· tutte le fasi";
   $("reviewTitle").textContent = "";
-  $("progressBar").style.width = `${(100 * done) / phases.length}%`;
+  $("myProgress").textContent = "";
+  $("progressBar").style.width = "0";  // the bar of the phases, under the title, says it
 
   const where = el("div", { class: "where" },
-    el("p", { class: "eyebrow", text: current >= 0 ? "La review è qui" : "Review completata" }),
-    el("p", {}, el("strong", { text: current >= 0 ? `${current + 1} · ${phases[current].title}` : "Tutte le fasi sono completate" }),
-      el("span", { class: "muted small", text: ` · ${plural(done, "fase completata", "fasi completate")} su ${phases.length}` })),
+    el("p", {}, ...(current >= 0 ? ["La review è arrivata a: ", el("strong", { text: phases[current].title })]
+      : [el("strong", { text: "Review completata" })])),
+    el("p", { class: "count", text: current >= 0
+      ? `Fase ${current + 1} di ${phases.length} · ${plural(done, "fase completata", "fasi completate")}`
+      : `Tutte le ${phases.length} fasi sono completate` }),
     el("ol", { class: "phase-bar", "aria-hidden": "true" },
-      ...phases.map((p, i) => el("li", { class: i === current ? "current" : p.state, title: `${i + 1} · ${p.title}` }))));
-  const top = el("section", { class: "card home-top" },
+      ...phases.map((p, i) => el("li", { class: i === current ? "current" : p.state, title: `${i + 1}. ${p.title}` }))));
+  const hero = el("section", { class: "hero" },
     el("div", {},
-      el("p", { class: "eyebrow", text: "Systematic review" }),
+      el("p", { class: "kicker", text: "Systematic review" }),
       el("h1", { text: title }),
-      el("p", { class: "repo" }, el("a", { href: `https://github.com/${S.repo}`, target: "_blank", rel: "noopener", text: S.repo }))),
-    where, taskPanel(phases));
+      S.coordinator ? el("p", { class: "repo" }, extLink(`https://github.com/${S.repo}`, S.repo)) : null,
+      where, documentLinks(d)),
+    workPanel(phases));
 
   const flow = el("section", { class: "card flow-card", "aria-labelledby": "flowTitle" },
-    el("h2", { id: "flowTitle", text: "Le fasi della review" }));
+    el("div", { class: "flow-head" }, el("h2", { id: "flowTitle", text: "Le fasi della review" })));
   for (const [groupId, label] of GROUPS) {
     const items = phases.map((p, i) => [p, i]).filter(([p]) => p.group === groupId);
     flow.append(el("div", { class: "group" },
-      el("div", { class: "band", "aria-hidden": "true" }, el("span", { text: label })),
+      el("h3", { class: "group-label", text: label }),
       el("ol", { class: "steps", start: items[0][1] + 1, "aria-label": label },
         ...items.map(([p, i]) => stepItem(p, i, phases, current)))));
   }
-  const documents = [["protocol/protocol.md", "Protocollo"], ["search/strategy.md", "Strategia di ricerca"],
-    ["prisma/prisma.md", "Diagramma PRISMA"], ["guida-revisori.md", "Guida per i revisori"]]
-    .filter(([path]) => d.paths.has(path) || !d.treeOk);
-  const automation = d.paths.has(".github/workflows/sysrev.yml")
-    ? el("a", { href: `https://github.com/${S.repo}/actions/workflows/sysrev.yml`, target: "_blank", rel: "noopener",
-      text: "Automazioni (GitHub Actions)" })
-    : null;
-  flow.append(el("p", { class: "home-docs" }, el("span", { class: "eyebrow", text: "Documenti" }),
-    ...documents.map(([path, label]) => el("a", { href: githubUrl(path), target: "_blank", rel: "noopener", text: label })),
-    automation,
-    el("a", { href: `https://github.com/${S.repo}`, target: "_blank", rel: "noopener", text: "Repository su GitHub" })));
-
-  $("homeView").replaceChildren(top, flow);
+  $("homeView").replaceChildren(hero, flow);
   showView("homeView");
 }
 
+// The documents of the review everyone may need (the criteria are in the protocol), and for whoever coordinates
+// the automations and the repository.
+function documentLinks(d) {
+  const documents = [["protocol/protocol.md", "Protocollo"], ["guida-revisori.md", "Guida per i revisori"],
+    ["search/strategy.md", "Strategia di ricerca"], ["prisma/prisma.md", "Diagramma PRISMA"]]
+    .filter(([path]) => d.paths.has(path) || !d.treeOk);
+  const docLink = (href, label, name) => el("a", { href, target: "_blank", rel: "noopener" }, icon(name), label);
+  return el("p", { class: "home-docs" }, el("span", { class: "label", text: "Documenti" }),
+    ...documents.map(([path, label]) => docLink(githubUrl(path), label, path === "guida-revisori.md" ? "book-open" : "file-text")),
+    S.coordinator && d.paths.has(".github/workflows/sysrev.yml")
+      ? docLink(`https://github.com/${S.repo}/actions/workflows/sysrev.yml`, "Automazioni", "arrow-up-right") : null,
+    S.coordinator ? docLink(`https://github.com/${S.repo}`, "Repository su GitHub", "arrow-up-right") : null);
+}
+
+// The bar of the phases in the header: the overview and the stages that have started.
+function showNav(current) {
+  $("stageTabs").hidden = !S.stages.length;
+  $("homeTab").setAttribute("aria-current", current === "home" ? "page" : "false");
+  for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
+    button.setAttribute("aria-current", button.dataset.stage === current ? "page" : "false");
+    button.hidden = !S.stages.includes(button.dataset.stage);
+  }
+}
+
 async function startHome(stateFiles) {
-  $("stageTabs").hidden = true;
+  showNav("home");
   try {
     loading("Caricamento della review…");
     renderHome(await homeData(stateFiles));
@@ -2827,6 +3219,7 @@ async function start() {
       .map(async (url) => (await api(url)).json()));
     S.login = String(user.login).toLowerCase();
     S.branch = repo.default_branch || "main";
+    S.coordinator = Boolean(repo.permissions && (repo.permissions.admin || repo.permissions.maintain));
   } catch (error) {
     showBanner(explain(error), true);
     return showLogin();
@@ -2896,7 +3289,9 @@ async function start() {
   if (!S.mine.length && !S.closed) {
     showView(null);
     const command = isFullText() ? "sysrev screening assign --full-text" : "sysrev screening assign";
-    return showBanner(`Non hai record assegnati nello screening ${STAGES[S.stage]}. Chiedi a chi coordina di controllare che "${S.login}" sia tra i revisori in review.yml e di lanciare "${command}".`, true);
+    return showBanner(S.coordinator
+      ? `Non hai record assegnati nello screening ${STAGES[S.stage]}. Controlla che "${S.login}" sia tra i revisori in review.yml e lancia "${command}".`
+      : `Non hai record assegnati nello screening ${STAGES[S.stage]}. Chiedi a chi coordina di aggiungerti tra i revisori (il tuo nome utente è "${S.login}").`, true);
   }
   if (S.closed) {
     S.filter = "all";
@@ -2909,13 +3304,7 @@ async function start() {
 }
 
 function setupStage() {
-  $("brandName").textContent = isFormStage() ? words().brand : "Screening";
-  $("stageLabel").textContent = isFormStage() ? "" : `· ${STAGES[S.stage]}`;
-  $("stageTabs").hidden = false;
-  for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
-    button.setAttribute("aria-selected", String(button.dataset.stage === S.stage));
-    button.hidden = !S.stages.includes(button.dataset.stage);
-  }
+  showNav(S.stage);
   const select = $("reason");
   select.hidden = !isFullText();
   $("reasonKeys").hidden = !isFullText();
@@ -3020,7 +3409,7 @@ $("note").addEventListener("change", saveNote);
 $("reason").addEventListener("change", () => { changeReason(); $("reason").blur(); });
 for (const button of $("stageTabs").querySelectorAll("[data-stage]")) {
   button.addEventListener("click", () => {
-    if (button.dataset.stage !== S.stage) navigate(stageUrl(button.dataset.stage));
+    if (button.getAttribute("aria-current") !== "page") navigate(stageUrl(button.dataset.stage));
   });
 }
 $("homeTab").addEventListener("click", () => navigate(homeUrl()));
