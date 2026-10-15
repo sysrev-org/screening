@@ -448,6 +448,106 @@ code.cmd { padding: 1px 7px; border: 1px solid var(--border); border-radius: var
 .home-docs a { display: inline-flex; gap: 6px; align-items: center; font-weight: 600; text-decoration: none; }
 .home-docs a:hover { text-decoration: underline; }
 
+/* the extraction form, edited in the page */
+.fe-head { display: flex; gap: 16px 32px; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; margin: 4px 0 18px; }
+.fe-head h1 { margin: 0 0 6px; font: 600 clamp(26px, 2.4vw, 32px)/1.2 var(--serif); letter-spacing: -.01em; }
+.fe-head p { margin: 0; max-width: 62ch; }
+.fe-head-links { display: flex; gap: 6px 20px; flex-wrap: wrap; font-size: 14.5px; }
+.fe-p { margin: 0; }
+.banner.fe-warn { background: var(--maybe-bg); border-left-color: var(--maybe); }
+.banner.fe-warn > .icon { color: var(--maybe); }
+.fe-p + .fe-p { margin-top: 4px; }
+.fe-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.fe-layout.single { grid-template-columns: minmax(0, 820px); }
+.fe-layout > .card { margin: 0; min-width: 0; }
+.fe-preview { position: sticky; top: 124px; max-height: calc(100vh - 124px - 100px); overflow-y: auto; }
+.fe-layout.single .fe-preview { position: static; max-height: none; }
+@media (max-width: 999px) { .fe-layout { grid-template-columns: minmax(0, 1fr); } .fe-preview { position: static; max-height: none; } }
+.fe-title { margin: 0 0 12px; font: 600 21px/1.3 var(--serif); }
+.fe-count { margin-left: 6px; color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.fe-count.bad { color: var(--exclude); font-weight: 700; }
+.fe-body { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.fe-section { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 10px; border: 1px solid var(--border);
+  border-radius: var(--r); background: var(--sunken); }
+.fe-section-head { display: flex; gap: 8px; align-items: center; min-width: 0; }
+.fe-section-head input { flex: 1 1 auto; min-width: 0; min-height: 36px; padding: 3px 8px; border-color: transparent; background: transparent;
+  font: 600 17px/1.3 var(--serif); }
+.fe-section-head input:hover:not(:disabled), .fe-section-head input:focus { border-color: var(--border-strong); background: var(--raised); }
+.fe-section-head input:disabled { background: transparent; color: var(--text); }
+.fe-eyebrow { flex: none; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.fe-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; }
+.fe-field { min-width: 0; border: 1px solid var(--border); border-radius: var(--r); background: var(--raised); }
+.fe-field.open { border-color: var(--accent-line); box-shadow: var(--shadow); }
+.fe-field.bad { border-color: var(--exclude); }
+.fe-field-head { display: flex; gap: 8px; align-items: center; padding: 6px 6px 6px 8px; cursor: pointer; }
+.fe-field-title { display: grid; gap: 2px; flex: 1 1 auto; min-width: 0; }
+.fe-label { font-weight: 600; overflow-wrap: anywhere; }
+.fe-meta { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; color: var(--muted); font-size: 13px; }
+.fe-meta code { font: 12.5px/1.4 var(--mono); }
+.fe-pill { display: inline-block; padding: 0 8px; border-radius: 999px; background: var(--sunken); color: var(--text-2); font-size: 12.5px;
+  font-weight: 600; white-space: nowrap; }
+.fe-pill.key { background: var(--accent-soft); color: var(--accent); }
+.fe-pill.data { background: var(--include-bg); color: var(--include); }
+.fe-pill.new { background: var(--changed-bg); color: var(--accent); }
+.fe-pill.edited { background: var(--maybe-bg); color: var(--maybe); }
+.fe-pill.bad { background: var(--exclude-bg); color: var(--exclude); }
+.fe-tools { display: flex; flex: none; gap: 0; }
+.btn.fe-tool { min-height: 32px; padding: 4px 7px; }
+.fe-caret .icon { transition: transform .16s var(--ease); }
+.fe-field.open .fe-caret .icon { transform: rotate(90deg); }
+.fe-field-form { display: grid; gap: 12px; padding: 14px; border-top: 1px solid var(--border); }
+.fe-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 640px) { .fe-grid { grid-template-columns: minmax(0, 1fr); } .fe-tools .fe-tool:nth-child(-n+2) { display: none; } }
+.fe-control { display: grid; gap: 4px; min-width: 0; align-content: start; }
+.fe-control > span { color: var(--text-2); font-size: 13.5px; font-weight: 600; }
+.fe-control > small, .fe-check small { color: var(--muted); font-size: 13px; }
+.fe-control input[type=text], .fe-control select, .fe-control textarea { width: 100%; min-width: 0; }
+.fe-mono { font: 14px/1.4 var(--mono); }
+.fe-check { display: flex; gap: 8px; align-items: flex-start; font-size: 14.5px; }
+.fe-check input { margin-top: 3px; flex: none; }
+.fe-check small { display: block; }
+.fe-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.fe-actions.end { justify-content: flex-end; }
+.fe-actions select { max-width: 100%; }
+.fe-empty { padding: 14px; border: 1px dashed var(--border-strong); border-radius: var(--r); color: var(--muted); text-align: center; }
+.fe-issues { display: grid; gap: 6px; }
+.fe-issue { display: flex; gap: 10px; align-items: flex-start; padding: 8px 12px; border-radius: var(--r); background: var(--maybe-bg);
+  font-size: 14.5px; }
+.fe-issue > .icon { margin-top: 3px; color: var(--maybe); }
+.fe-issue.error { background: var(--exclude-bg); }
+.fe-issue.error > .icon { color: var(--exclude); }
+.fe-issue .btn { margin-left: auto; }
+.fe-sample { padding: 0; margin-top: 4px; }
+.fe-sample h3:first-child { margin-top: 8px; }
+.fe-pv-label { display: block; margin-bottom: 4px; font-weight: 600; font-size: 14.5px; }
+.fe-table { overflow-x: auto; margin-bottom: 10px; border: 1px solid var(--border); border-radius: var(--r); }
+.fe-table table { min-width: 100%; border-collapse: collapse; font-size: 14px; }
+.fe-table th { padding: 6px 8px; background: var(--sunken); border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.fe-table td { min-width: 120px; padding: 4px; border-bottom: 1px solid var(--border); }
+.fe-table td input, .fe-table td select { width: 100%; min-height: 34px; padding: 4px 8px; }
+.fe-proposal { max-width: 820px; margin-top: 20px; }
+.fe-proposal textarea { width: 100%; margin: 12px 0; }
+.fe-proposal a.btn[aria-disabled="true"] { opacity: .45; }
+.fe-bar .bar { justify-content: flex-end; }
+.fe-bar .fe-summary { flex: 1 1 280px; min-width: 0; font-size: 15px; }
+.fe-bad-text { color: var(--exclude); font-weight: 600; }
+.fe-dialog { width: min(640px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid var(--border);
+  border-radius: var(--r-lg); background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.fe-dialog::backdrop { background: rgb(10 20 26 / .45); }
+.fe-dialog-body { display: grid; gap: 14px; padding: 22px; }
+.fe-list { display: grid; gap: 3px; margin: 0; padding-left: 20px; font-size: 15px; }
+.fe-confirm { padding: 10px 12px; border-radius: var(--r); background: var(--exclude-bg); }
+.fe-toast { position: fixed; left: 50%; bottom: 96px; z-index: 30; transform: translateX(-50%); display: flex; gap: 12px; align-items: center;
+  max-width: calc(100vw - 32px); padding: 9px 12px 9px 16px; border-radius: var(--r); background: var(--text); color: var(--bg);
+  box-shadow: var(--shadow); font-size: 14.5px; }
+.fe-toast .btn { min-height: 30px; }
+.step-extra { grid-column: 2; display: inline-flex; gap: 6px; align-items: center; justify-self: start; margin: -4px 0 8px 14px;
+  font-size: 14px; font-weight: 600; text-decoration: none; }
+.step-extra:hover { text-decoration: underline; }
+.step-extra .icon { width: 15px; height: 15px; }
+.ex-form-link { display: inline-flex; gap: 6px; align-items: center; margin: 0 0 12px; font-weight: 600; font-size: 14.5px; text-decoration: none; }
+.ex-form-link:hover { text-decoration: underline; }
+
 /* login and loading */
 .login { display: grid; place-items: center; min-height: calc(100dvh - 220px); }
 .login-card { width: 100%; max-width: 460px; margin: 24px auto; padding: 36px 36px 30px; box-shadow: var(--shadow); }
@@ -510,6 +610,8 @@ code.cmd { padding: 1px 7px; border: 1px solid var(--border); border-radius: var
 <symbol id="i-list" viewBox="0 0 256 256"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"/></symbol>
 <symbol id="i-caret-left" viewBox="0 0 256 256"><path d="M165.66,202.34a8,8,0,0,1-11.32,11.32l-80-80a8,8,0,0,1,0-11.32l80-80a8,8,0,0,1,11.32,11.32L91.31,128Z"/></symbol>
 <symbol id="i-caret-right" viewBox="0 0 256 256"><path d="M181.66,133.66l-80,80a8,8,0,0,1-11.32-11.32L164.69,128,90.34,53.66a8,8,0,0,1,11.32-11.32l80,80A8,8,0,0,1,181.66,133.66Z"/></symbol>
+<symbol id="i-caret-up" viewBox="0 0 256 256"><path d="M213.66,165.66a8,8,0,0,1-11.32,0L128,91.31,53.66,165.66a8,8,0,0,1-11.32-11.32l80-80a8,8,0,0,1,11.32,0l80,80A8,8,0,0,1,213.66,165.66Z"/></symbol>
+<symbol id="i-caret-down" viewBox="0 0 256 256"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></symbol>
 <symbol id="i-check-bold" viewBox="0 0 256 256"><path d="M232.49,80.49l-128,128a12,12,0,0,1-17,0l-56-56a12,12,0,1,1,17-17L96,183,215.51,63.51a12,12,0,0,1,17,17Z"/></symbol>
 <symbol id="i-question-bold" viewBox="0 0 256 256"><path d="M144,180a16,16,0,1,1-16-16A16,16,0,0,1,144,180Zm92-52A108,108,0,1,1,128,20,108.12,108.12,0,0,1,236,128Zm-24,0a84,84,0,1,0-84,84A84.09,84.09,0,0,0,212,128ZM128,64c-24.26,0-44,17.94-44,40v4a12,12,0,0,0,24,0v-4c0-8.82,9-16,20-16s20,7.18,20,16-9,16-20,16a12,12,0,0,0-12,12v8a12,12,0,0,0,23.73,2.56C158.31,137.88,172,122.37,172,104,172,81.94,152.26,64,128,64Z"/></symbol>
 <symbol id="i-x-bold" viewBox="0 0 256 256"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"/></symbol>
@@ -656,10 +758,12 @@ code.cmd { padding: 1px 7px; border: 1px solid var(--border); border-radius: var
           <strong>Segna come completata</strong>: finché l'estrazione è aperta puoi sempre riaprirla.</p>
         </div>
       </details>
+      <a class="ex-form-link" id="exFormLink" hidden><svg class="icon" aria-hidden="true"><use href="#i-file-text"/></svg>Scheda di estrazione</a>
       <div id="exList"></div>
     </div>
     <div id="exStudy" hidden></div>
   </section>
+  <section id="formView" hidden aria-label="Scheda di estrazione"></section>
 </main>
 
 <div class="decide" id="exBar" hidden>
@@ -674,6 +778,16 @@ code.cmd { padding: 1px 7px; border: 1px solid var(--border); border-radius: var
     </div>
   </div>
 </div>
+
+<div class="decide fe-bar" id="feBar" hidden>
+  <div class="bar">
+    <span class="fe-summary" id="feSummary" role="status"></span>
+    <button class="btn" id="feDiscard" type="button">Annulla le modifiche</button>
+    <button class="btn primary" id="feSave" type="button"><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>Salva su GitHub</button>
+  </div>
+</div>
+<dialog class="fe-dialog" id="feDialog" aria-label="Salva la scheda"></dialog>
+<div class="fe-toast" id="feToast" role="status" hidden></div>
 
 <div class="decide" id="decideBar" hidden>
   <div class="bar">
@@ -2303,6 +2417,9 @@ function exShowList() {
   $("exTabCompare").setAttribute("aria-selected", String(EX.tab === "compare"));
   $("exCompareTools").hidden = EX.tab !== "compare";
   $("exHelp").hidden = EX.tab === "compare" || EX.closed;
+  $("exFormLink").hidden = S.stage !== "extraction";
+  $("exFormLink").href = formUrl();
+  $("exFormLink").lastChild.textContent = S.coordinator && !EX.closed ? "Modifica la scheda di estrazione" : "Leggi la scheda di estrazione";
   updateExProgress();
   const list = $("exList");
   list.replaceChildren();
@@ -2802,6 +2919,1081 @@ function toggleDone() {
   rerenderForm();
 }
 
+// ---------------------------------------------------------------- the extraction form, edited in the page
+
+// extraction/form.yml can be prepared here, before the extraction starts and while it runs. Only whoever coordinates
+// (admin of the repository) changes it; the reviewers read it and propose changes with an issue on GitHub. The
+// changes stay in this browser until "Salva su GitHub": one commit of form.yml, then the automation (or sysrev
+// extraction assign) shows the new form to the reviewers. A field that already has values in the reviewers' files
+// keeps its id and its key, changes type only without losing them, and is taken away only after a confirmation.
+const FORM_PATH = "extraction/form.yml";
+// The example form of a new review: the same as src/sysrev/template/extraction/form.yml (tests/test_form_page.py).
+const FORM_EXAMPLE = {"study": [
+  {"section": "Studio"},
+  {"id": "country", "label": "Paese", "type": "text"},
+  {"id": "design", "label": "Disegno dello studio", "type": "choice", "options": ["RCT", "Coorte prospettica", "Coorte retrospettiva", "Caso-controllo", "Trasversale", "Altro"]},
+  {"id": "funding", "label": "Finanziamento", "type": "choice", "options": ["Pubblico", "Industria", "Misto", "Nessuno", "Non riportato"]},
+  {"id": "conflicts_declared", "label": "Conflitti di interesse dichiarati", "type": "yes_no"},
+  {"section": "Partecipanti"},
+  {"id": "population", "label": "Popolazione", "type": "long_text", "help": "Chi è stato incluso (criteri principali)."},
+  {"id": "n_total", "label": "Partecipanti analizzati (n)", "type": "integer"},
+  {"id": "age_mean", "label": "Età media (anni)", "type": "number"},
+  {"id": "female_pct", "label": "Donne (%)", "type": "number"},
+  {"section": "Intervento e confronto"},
+  {"id": "intervention", "label": "Intervento o esposizione", "type": "long_text"},
+  {"id": "comparator", "label": "Confronto", "type": "long_text"},
+  {"id": "follow_up", "label": "Durata del follow-up", "type": "text", "help": "Per esempio 12 mesi."},
+  {"section": "Outcome"},
+  {"id": "outcomes_reported", "label": "Outcome riportati", "type": "long_text"}
+], "results": [
+  {"id": "outcome", "label": "Outcome", "type": "text", "key": true},
+  {"id": "timepoint", "label": "Momento", "type": "text", "key": true, "help": "Per esempio basale, 6 mesi, 12 mesi."},
+  {"id": "group", "label": "Gruppo", "type": "text", "key": true},
+  {"id": "n", "label": "n", "type": "integer"},
+  {"id": "mean", "label": "Media", "type": "number"},
+  {"id": "sd", "label": "DS", "type": "number"},
+  {"id": "events", "label": "Eventi", "type": "integer"},
+  {"id": "estimate", "label": "Stima riportata", "type": "number", "help": "Solo se lo studio riporta un effetto già calcolato (per esempio un OR aggiustato); allora scrivi anche l'intervallo di confidenza al 95%."},
+  {"id": "ci_lower", "label": "IC 95% inferiore", "type": "number"},
+  {"id": "ci_upper", "label": "IC 95% superiore", "type": "number"}
+]};
+const FIELD_TYPES = { text: "Testo breve", long_text: "Testo lungo", number: "Numero", integer: "Numero intero",
+  choice: "Una scelta", multiple_choice: "Più scelte", yes_no: "Sì / no" };
+// Changes of type that keep the values already extracted.
+const SAFE_TYPES = { text: ["long_text"], long_text: ["text"], integer: ["number"], number: [], choice: ["multiple_choice"],
+  multiple_choice: [], yes_no: [] };
+const FIELD_ID = /^[a-z][a-z0-9_]*$/;
+const RESERVED_IDS = new Set(["record_id", "study", "title", "basis", "row"]);
+// Ready-made groups of fields, with the ids that the meta-analysis reads.
+const FORM_BLOCKS = {
+  study: [
+    { name: "Identificazione", fields: [
+      { id: "first_author", label: "Primo autore", type: "text" },
+      { id: "year", label: "Anno di pubblicazione", type: "integer" },
+      { id: "registration", label: "Registrazione del protocollo", type: "text", help: "Per esempio NCT01234567 o CRD42024…" },
+    ] },
+    { name: "Setting", fields: [
+      { id: "setting", label: "Setting", type: "choice", options: ["Ospedale", "Ambulatorio", "Comunità", "Misto", "Non riportato"] },
+      { id: "centres", label: "Numero di centri", type: "integer" },
+      { id: "recruitment_period", label: "Periodo di arruolamento", type: "text" },
+    ] },
+    { name: "Partecipanti randomizzati e persi", fields: [
+      { id: "n_randomised", label: "Randomizzati (n)", type: "integer" },
+      { id: "n_lost", label: "Persi al follow-up (n)", type: "integer" },
+      { id: "itt", label: "Analisi intention-to-treat", type: "yes_no" },
+    ] },
+  ],
+  results: [
+    { name: "Chiavi della riga", fields: [
+      { id: "outcome", label: "Outcome", type: "text", key: true },
+      { id: "timepoint", label: "Momento", type: "text", key: true },
+      { id: "group", label: "Gruppo", type: "text", key: true },
+    ] },
+    { name: "Esito dicotomico", fields: [{ id: "events", label: "Eventi", type: "integer" }, { id: "n", label: "n", type: "integer" }] },
+    { name: "Esito continuo", fields: [
+      { id: "n", label: "n", type: "integer" }, { id: "mean", label: "Media", type: "number" }, { id: "sd", label: "DS", type: "number" },
+    ] },
+    { name: "Effetto già calcolato", fields: [
+      { id: "effect_measure", label: "Misura dell'effetto", type: "choice", options: ["OR", "RR", "HR", "MD", "SMD"] },
+      { id: "estimate", label: "Stima riportata", type: "number" },
+      { id: "ci_lower", label: "IC 95% inferiore", type: "number" },
+      { id: "ci_upper", label: "IC 95% superiore", type: "number" },
+    ] },
+  ],
+};
+
+const FE = {
+  form: null, saved: null, sha: null, status: "none", counts: new Map(), automation: false, editable: false,
+  tab: "study", preview: "study", open: new Set(), pv: {}, pvRows: 2, uid: 1, saving: false, toastTimer: null,
+};
+const feUid = () => `f${FE.uid++}`;
+const feClone = (x) => JSON.parse(JSON.stringify(x));
+const feDraftKey = () => `sysrev:form:${S.repo}`;
+
+// --- form.yml (begin): read and write extraction/form.yml (tests/test_form_page.py runs this part with Node)
+
+// The YAML that a form uses: mappings and lists, in blocks or in brackets ([a, b], {id: x, label: y}), plain or
+// quoted text, and | or > for long text. Gives what yaml.safe_load gives; anything else is an error with its line.
+function parseFormYaml(source) {
+  const lines = [];
+  String(source).replace(/^﻿/, "").split(/\r?\n/).forEach((raw, i) => {
+    if (/^\s*\t/.test(raw)) throw yamlError(i + 1, "a inizio riga ci sono tabulazioni: usa gli spazi");
+    const text = stripComment(raw).replace(/\s+$/, "");
+    lines.push({ n: i + 1, indent: text.length - text.trimStart().length, text: text.trim(), raw });
+  });
+  let pos = 0;
+  const skipBlank = () => { while (pos < lines.length && !lines[pos].text) pos++; };
+  skipBlank();
+  if (pos >= lines.length) return null;
+  if (lines[pos].text === "---") { pos++; skipBlank(); }
+  const value = parseBlock();
+  skipBlank();
+  if (pos < lines.length && lines[pos].text !== "...") throw yamlError(lines[pos].n, "rientro (spazi a inizio riga) non coerente");
+  return value;
+
+  function parseBlock() {  // a list or a mapping, at the indent of its first line
+    skipBlank();
+    const line = lines[pos];
+    if (line.text.startsWith("- ") || line.text === "-") return parseSequence(line.indent);
+    if (!isKeyLine(line.text)) {
+      pos++;
+      return scalarOrFlow(line.text, line.n);
+    }
+    return parseMapping(line.indent);
+  }
+
+  function parseSequence(indent) {
+    const out = [];
+    for (skipBlank(); pos < lines.length; skipBlank()) {
+      const line = lines[pos];
+      if (line.indent < indent || !(line.text.startsWith("- ") || line.text === "-")) break;
+      if (line.indent > indent) throw yamlError(line.n, "rientro (spazi a inizio riga) non coerente");
+      const rest = line.text === "-" ? "" : line.text.slice(2).trimStart();
+      const inner = line.indent + (line.text.length - rest.length);
+      if (!rest) { pos++; out.push(nextIsChild(indent) ? parseBlock() : null); continue; }
+      if (rest.startsWith("- ")) { lines[pos] = { ...line, indent: inner, text: rest }; out.push(parseSequence(inner)); continue; }
+      if (isKeyLine(rest)) { lines[pos] = { ...line, indent: inner, text: rest }; out.push(parseMapping(inner)); continue; }
+      pos++;
+      out.push(scalarOrFlow(rest, line.n));
+    }
+    return out;
+  }
+
+  function parseMapping(indent) {
+    const out = {};
+    for (skipBlank(); pos < lines.length; skipBlank()) {
+      const line = lines[pos];
+      if (line.indent < indent) break;
+      if (line.indent > indent) throw yamlError(line.n, "rientro (spazi a inizio riga) non coerente");
+      if (line.text.startsWith("- ")) break;
+      const match = keyMatch(line.text);
+      if (!match) throw yamlError(line.n, `manca «:» dopo il nome (${line.text.slice(0, 30)})`);
+      const key = unquoteKey(match[1], line.n);
+      const rest = match[2].trim();
+      pos++;
+      if (rest === "|" || rest === ">" || /^[|>][+-]?$/.test(rest)) out[key] = blockText(indent, rest, line.n);
+      else if (rest && !/^['"\[{]/.test(rest)) out[key] = scalar(continued(rest, indent), line.n);
+      else if (rest) out[key] = scalarOrFlow(rest, line.n);
+      else if (nextIsChild(indent) || nextIsSequenceAt(indent)) out[key] = parseBlock();
+      else out[key] = null;
+    }
+    return out;
+  }
+
+  function continued(text, indent) {  // plain text that goes on in the next, more indented lines
+    while (pos < lines.length && lines[pos].text && lines[pos].indent > indent && !keyMatch(lines[pos].text)) text += ` ${lines[pos++].text}`;
+    return text;
+  }
+
+  function nextIsChild(indent) {
+    skipBlank();
+    return pos < lines.length && lines[pos].indent > indent;
+  }
+  function nextIsSequenceAt(indent) {  // "key:" followed by "- item" at the same indent is a list
+    skipBlank();
+    return pos < lines.length && lines[pos].indent === indent && (lines[pos].text.startsWith("- ") || lines[pos].text === "-");
+  }
+
+  function blockText(indent, style, n) {
+    const body = [];
+    let inner = -1;
+    while (pos < lines.length) {
+      const line = lines[pos];
+      const raw = line.raw.replace(/\s+$/, "");
+      const lead = raw.length - raw.trimStart().length;
+      if (raw.trim() && lead <= indent) break;
+      if (raw.trim() && inner < 0) inner = lead;
+      body.push(raw.trim() ? raw.slice(inner) : "");
+      pos++;
+    }
+    while (body.length && !body.at(-1)) body.pop();
+    if (!body.length) return "";
+    const text = style[0] === "|" ? body.join("\n") : body.join("\n").replace(/([^\n])\n(?!\n)/g, "$1 ").replace(/\n\n/g, "\n");
+    return style.endsWith("-") ? text : `${text}\n`;
+  }
+}
+
+function yamlError(n, message) { return new Error(`riga ${n}: ${message}`); }
+
+// The line without its comment (a # at the start or after a space, outside quotes).
+function stripComment(line) {
+  let quote = "";
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i];
+    if (quote) {
+      if (c === quote && quote === "'" && line[i + 1] === "'") i++;
+      else if (c === "\\" && quote === '"') i++;
+      else if (c === quote) quote = "";
+    } else if ((c === "'" || c === '"') && (i === 0 || /[\s\[{,:-]/.test(line[i - 1]))) quote = c;
+    else if (c === "#" && (i === 0 || /\s/.test(line[i - 1]))) return line.slice(0, i);
+  }
+  return line;
+}
+
+const PLAIN_KEY = /^([^\s:{}\[\],#'"&*!|>%@`](?:[^:]|:(?=\S))*?):(?: +(.*)|$)/;
+function keyMatch(text) {
+  if (text[0] === "'" || text[0] === '"') {
+    const end = quotedEnd(text, 0);
+    if (end > 0 && text[end + 1] === ":" && (end + 2 === text.length || text[end + 2] === " ")) return [text, text.slice(0, end + 1), text.slice(end + 2)];
+    return null;
+  }
+  const match = text.match(PLAIN_KEY);
+  return match ? [match[0], match[1], match[2] || ""] : null;
+}
+function isKeyLine(text) { return !/^[\[{]/.test(text) && Boolean(keyMatch(text)); }
+function unquoteKey(text, n) {
+  const value = scalar(text.trim(), n);
+  return value === null ? "null" : String(value);
+}
+function quotedEnd(text, start) {
+  const q = text[start];
+  for (let i = start + 1; i < text.length; i++) {
+    if (q === "'" && text[i] === "'") { if (text[i + 1] === "'") { i++; continue; } return i; }
+    if (q === '"' && text[i] === "\\") { i++; continue; }
+    if (q === '"' && text[i] === '"') return i;
+  }
+  return -1;
+}
+
+function scalarOrFlow(text, n) {
+  if (text[0] === "[" || text[0] === "{") {
+    const [value, end] = flow(text, 0, n);
+    if (text.slice(end).trim()) throw yamlError(n, "testo dopo la parentesi chiusa");
+    return value;
+  }
+  return scalar(text, n);
+}
+
+function flow(text, i, n) {
+  const open = text[i], close = open === "[" ? "]" : "}";
+  const out = open === "[" ? [] : {};
+  i++;
+  for (;;) {
+    while (text[i] === " ") i++;
+    if (i >= text.length) throw yamlError(n, `manca «${close}»`);
+    if (text[i] === close) return [out, i + 1];
+    let item, end;
+    if (text[i] === "[" || text[i] === "{") [item, end] = flow(text, i, n);
+    else {
+      end = i;
+      if (text[i] === "'" || text[i] === '"') {
+        end = quotedEnd(text, i);
+        if (end < 0) throw yamlError(n, "virgolette non chiuse");
+        end++;
+      } else {
+        while (end < text.length && !",]}".includes(text[end]) && !(open === "{" && text[end] === ":" && /[\s,]/.test(text[end + 1] || " "))) end++;
+      }
+      item = text.slice(i, end).trim();
+    }
+    i = end;
+    while (text[i] === " ") i++;
+    if (open === "{") {
+      if (text[i] !== ":") throw yamlError(n, "tra le graffe ogni voce è «nome: valore»");
+      i++;
+      while (text[i] === " ") i++;
+      let value;
+      if (text[i] === "[" || text[i] === "{") [value, i] = flow(text, i, n);
+      else {
+        let stop = i;
+        if (text[i] === "'" || text[i] === '"') {
+          stop = quotedEnd(text, i);
+          if (stop < 0) throw yamlError(n, "virgolette non chiuse");
+          stop++;
+        } else while (stop < text.length && !",}".includes(text[stop])) stop++;
+        value = scalar(text.slice(i, stop).trim(), n);
+        i = stop;
+      }
+      out[typeof item === "string" ? unquoteKey(item, n) : String(item)] = value;
+    } else out.push(typeof item === "string" ? scalar(item, n) : item);
+    while (text[i] === " ") i++;
+    if (text[i] === ",") i++;
+    else if (text[i] !== close) throw yamlError(n, `manca «,» o «${close}»`);
+  }
+}
+
+// A single value, typed as in YAML 1.1 (yaml.safe_load): true/yes/on, false/no/off, null, numbers, text.
+function scalar(text, n) {
+  if (text[0] === "'") {
+    if (quotedEnd(text, 0) !== text.length - 1) throw yamlError(n, "virgolette non chiuse o testo dopo le virgolette");
+    return text.slice(1, -1).replace(/''/g, "'");
+  }
+  if (text[0] === '"') {
+    if (quotedEnd(text, 0) !== text.length - 1) throw yamlError(n, "virgolette non chiuse o testo dopo le virgolette");
+    return text.slice(1, -1).replace(/\\(u[0-9a-fA-F]{4}|.)/g, (m, c) => c.length > 1 ? String.fromCharCode(parseInt(c.slice(1), 16))
+      : ({ n: "\n", t: "\t", '"': '"', "\\": "\\", "/": "/", "0": "\0", r: "\r" })[c] ?? c);
+  }
+  if (/^[&*!|>%@`]/.test(text) || /: |:$/.test(text)) throw yamlError(n, `«${text.slice(0, 30)}»: metti il testo tra virgolette`);
+  if (/^(~|null|Null|NULL)?$/.test(text)) return null;
+  if (/^(yes|Yes|YES|true|True|TRUE|on|On|ON)$/.test(text)) return true;
+  if (/^(no|No|NO|false|False|FALSE|off|Off|OFF)$/.test(text)) return false;
+  if (/^[-+]?(0|[1-9][0-9_]*)$/.test(text)) return Number(text.replace(/_/g, ""));
+  if (/^[-+]?([0-9][0-9_]*)?\.[0-9_]*([eE][-+][0-9]+)?$/.test(text) && /[0-9]/.test(text)) return Number(text.replace(/_/g, ""));
+  return text;
+}
+
+// --- writing: the same layout as form_yaml in src/sysrev/extraction_form.py, quoting what YAML would misread.
+function yamlScalar(value, inList = false) {
+  const text = String(value).replace(/\s*\n\s*/g, " ").trim();
+  let plain = false;
+  try {
+    plain = text !== "" && scalar(text, 0) === text && !/^[-?:,\[\]{}#&*!|>'"%@`\s]/.test(text)
+      && !/ #/.test(text) && !(inList && /[,\[\]{}]/.test(text));
+  } catch { plain = false; }
+  return plain ? text : `'${text.replace(/'/g, "''")}'`;
+}
+
+function formYaml(form, header) {
+  const lines = [...header.map((line) => `# ${line}`.trimEnd()), "", "study:"];
+  const field = (f, inResults) => {
+    lines.push(`  - id: ${yamlScalar(f.id)}`, `    label: ${yamlScalar(f.label)}`, `    type: ${f.type}`);
+    if ((f.type === "choice" || f.type === "multiple_choice") && f.options.length) {
+      lines.push(`    options: [${f.options.map((o) => yamlScalar(o, true)).join(", ")}]`);
+    }
+    if (f.help.trim()) lines.push(`    help: ${yamlScalar(f.help)}`);
+    if (inResults && f.key) lines.push("    key: true");
+    if (f.compare === false) lines.push("    compare: false");
+  };
+  for (const item of form.study) {
+    if (item.kind === "section") {
+      if (lines.at(-1) !== "study:") lines.push("");
+      lines.push(`  - section: ${yamlScalar(item.name)}`);
+    } else field(item, false);
+  }
+  if (form.results.length) {
+    lines.push("", "# Risultati: una riga per ogni combinazione dei campi con key: true.", "results:");
+    for (const f of form.results) field(f, true);
+  }
+  return `${lines.join("\n")}\n`;
+}
+// --- form.yml (end)
+
+// --- the form as edited: sections and fields in order (origin: the id on GitHub, to find the values already extracted)
+
+function feField(item) {
+  const options = Array.isArray(item.options) ? item.options : [];
+  return {
+    kind: "field", uid: feUid(), id: String(item.id ?? ""), label: String(item.label ?? item.id ?? ""),
+    type: String(item.type || "text").trim().toLowerCase(), options: options.map((o) => String(o ?? "").trim()).filter(Boolean),
+    help: String(item.help ?? "").trim(), key: item.key === true, compare: item.compare !== false, auto: false, origin: String(item.id ?? ""),
+  };
+}
+function feFromData(data) {
+  if (!data || typeof data !== "object" || !Array.isArray(data.study)) throw new Error("manca la parte study (i dati dello studio)");
+  const study = data.study.map((item) => item && typeof item === "object" && "section" in item && !("id" in item)
+    ? { kind: "section", uid: feUid(), name: String(item.section ?? "") } : feField(item || {}));
+  if (data.results != null && !Array.isArray(data.results)) throw new Error("results deve essere un elenco di campi");
+  return { study, results: (data.results || []).map((item) => feField(item || {})) };
+}
+const feFields = (form = FE.form) => [...form.study.filter((i) => i.kind === "field"), ...form.results];
+const feCount = (f) => (f.origin && FE.counts.get(f.origin)) || 0;
+const feSaved = (f) => feFields(FE.saved).find((s) => s.uid === f.uid);
+
+function feMakeId(label) {
+  let text = String(label || "").normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 40).replace(/_+$/, "");
+  if (!/^[a-z]/.test(text)) text = `campo_${text}`.replace(/_+$/, "");
+  return text;
+}
+function feUniqueId(base, except) {
+  const used = new Set(feFields().filter((f) => f !== except).map((f) => f.id));
+  let id = base, n = 2;
+  while (used.has(id) || RESERVED_IDS.has(id)) id = `${base}_${n++}`;
+  return id;
+}
+
+function feState(f) {
+  const s = feSaved(f);
+  if (!s) return "new";
+  const same = ["id", "label", "type", "help", "key", "compare"].every((k) => s[k] === f[k]) && s.options.join("\n") === f.options.join("\n");
+  return same ? "" : "edited";
+}
+
+function feChanges() {
+  const now = feFields(), before = feFields(FE.saved);
+  const added = now.filter((f) => !before.some((s) => s.uid === f.uid));
+  const removed = before.filter((s) => !now.some((f) => f.uid === s.uid));
+  const edited = now.filter((f) => feState(f) === "edited");
+  const layout = (form) => JSON.stringify([form.study.map((i) => i.kind === "section" ? `#${i.name}` : i.uid), form.results.map((f) => f.uid)]);
+  const moved = layout(FE.form) !== layout(FE.saved) && !added.length && !removed.length;
+  return { added, removed, edited, moved, any: Boolean(added.length || removed.length || edited.length || moved) };
+}
+
+// --- checks: the rules of parse_form in src/sysrev/extraction.py, and advice
+
+function feCheck() {
+  const issues = [];
+  const seen = new Map();
+  for (const f of feFields()) {
+    const name = f.label.trim() || "(campo senza nome)";
+    if (!f.label.trim()) issues.push({ f, error: true, text: "Un campo non ha il nome che vedono i revisori." });
+    if (!FIELD_ID.test(f.id)) issues.push({ f, error: true, text: `${name}: l'id «${f.id}» non va bene. Usa lettere minuscole senza accenti, numeri e _ (deve iniziare con una lettera).` });
+    else if (RESERVED_IDS.has(f.id)) issues.push({ f, error: true, text: `${name}: l'id ${f.id} è riservato, scegline un altro.` });
+    if (seen.has(f.id)) issues.push({ f, error: true, text: `${name}: l'id ${f.id} è già usato da «${seen.get(f.id).label}».` });
+    seen.set(f.id, f);
+    if (!FIELD_TYPES[f.type]) issues.push({ f, error: true, text: `${name}: il tipo «${f.type}» non esiste, scegline uno.` });
+    if (f.type === "choice" || f.type === "multiple_choice") {
+      if (!f.options.length) issues.push({ f, error: true, text: `${name}: elenca le scelte possibili.` });
+      const lower = f.options.map((o) => o.toLowerCase());
+      if (new Set(lower).size !== lower.length) issues.push({ f, error: true, text: `${name}: ci sono scelte ripetute.` });
+    }
+    const s = feSaved(f);
+    if (s && feCount(f) && (s.type === "choice" || s.type === "multiple_choice")) {
+      const gone = s.options.filter((o) => !f.options.some((n) => n.toLowerCase() === o.toLowerCase()));
+      if (gone.length) issues.push({ f, text: `${name}: hai tolto ${gone.join(", ")}. Nelle schede che l'avevano scelta comparirà come «non in elenco».` });
+    }
+  }
+  if (!FE.form.study.some((i) => i.kind === "field")) issues.push({ error: true, text: "Nei dati dello studio serve almeno un campo." });
+  if (FE.form.results.length && !FE.form.results.some((f) => f.key)) {
+    issues.push({ error: true, text: "Nella tabella dei risultati segna come chiave i campi che identificano una riga (di solito outcome, momento e gruppo)." });
+  }
+  if (!FE.form.results.length) issues.push({ text: "Non c'è la tabella dei risultati: senza, la meta-analisi non può usare i dati della scheda." });
+  else {
+    const ids = new Set(FE.form.results.map((f) => f.id));
+    const missing = ["outcome", "n"].filter((id) => !ids.has(id));
+    if (missing.length) issues.push({ text: `Nei risultati non ci sono gli id ${missing.join(", ")}: per la meta-analisi dovrai indicare in analysis/analyses.yml quali colonne usare.` });
+    const typed = FE.form.results.filter((f) => f.key && f.type === "text");
+    if (typed.length) issues.push({ f: typed[0], text: `${typed.map((f) => f.label).join(", ")}: ${typed.length === 1 ? "è una chiave scritta" : "sono chiavi scritte"} a mano. Se i revisori usano parole diverse le righe non si abbinano: per gli outcome conviene una scelta da elenco.` });
+  }
+  for (const s of feFields(FE.saved)) {
+    if (!feFields().some((f) => f.uid === s.uid) && feCount(s)) {
+      issues.push({ text: `Hai tolto «${s.label}», che ha valori in ${plural(feCount(s), "scheda", "schede")}: restano nei file dei revisori ma non nelle tabelle finali.` });
+    }
+  }
+  return issues;
+}
+
+// --- loading
+
+async function startForm(stateFile) {
+  showNav(S.stages.includes("extraction") ? "extraction" : "home");
+  document.body.classList.add("wide");
+  try {
+    if (stateFile) {
+      const state = JSON.parse(stateFile.text);
+      FE.status = state.status === "closed" ? "closed" : "open";
+      $("reviewTitle").textContent = state.title || S.repo;
+    }
+    document.title = `Scheda di estrazione · ${S.repo.split("/").pop()}`;
+    loading("Caricamento della scheda di estrazione…");
+    const file = await readFile(FORM_PATH);
+    FE.sha = file ? file.sha : null;
+    if (!file && !S.coordinator) {
+      showView(null);
+      return showBanner("La scheda di estrazione non è ancora pronta: la sta preparando chi coordina.");
+    }
+    let data = FORM_EXAMPLE;
+    if (file) {
+      try { data = parseFormYaml(file.text); }
+      catch (error) { return feUnreadable(error.message); }
+    }
+    try { FE.saved = feFromData(data); }
+    catch (error) { return feUnreadable(error.message); }
+    FE.form = feClone(FE.saved);
+    FE.editable = S.coordinator && FE.status !== "closed";
+    if (S.coordinator) await feLoadCounts();
+  } catch (error) {
+    showView(null);
+    return showBanner(`Caricamento non riuscito: ${explain(error)}`, true);
+  }
+  showBanner("");
+  if (FE.editable) feRestoreDraft();
+  showView("formView");
+  feRender();
+}
+
+function feUnreadable(message) {
+  showView(null);
+  showBanner(`La pagina non riesce a leggere ${FORM_PATH} (${message}). Correggi il file`
+    + (S.coordinator ? ` su GitHub (${githubUrl(FORM_PATH)}) o con un editor di testo, poi ricarica la pagina.` : ": avvisa chi coordina."), true);
+}
+
+// Which fields already have values in the files of the reviewers (and in the agreed values), and whether the
+// review has the automation: one listing of the repository and one read for every 100 files.
+async function feLoadCounts() {
+  let paths = [];
+  try {
+    const tree = await (await api(`${API}/repos/${S.repo}/git/trees/${encodeURIComponent(S.branch)}?recursive=1`)).json();
+    const all = (tree.tree || []).filter((item) => item.type === "blob").map((item) => item.path);
+    FE.automation = all.includes(".github/workflows/sysrev.yml");
+    paths = all.filter((p) => /^extraction\/(data\/[^/]+|consensus)\/[^/]+\.json$/.test(p));
+  } catch (error) {
+    if (error.status === 401) throw error;
+  }
+  if (!paths.length) return;
+  for (const file of (await readFiles(paths)).values()) {
+    const doc = file && parseDoc(file.text, "", "");
+    if (!doc) continue;
+    const ids = new Set([...Object.entries(doc.study), ...doc.results.flatMap((row) => Object.entries(row))]
+      .filter(([, cell]) => hasValue(cell)).map(([id]) => id));
+    for (const id of ids) FE.counts.set(id, (FE.counts.get(id) || 0) + 1);
+  }
+}
+
+// --- the copy in this browser: changes are kept until they are saved on GitHub
+
+function fePersist() {
+  try {
+    if (feChanges().any) localStorage.setItem(feDraftKey(), JSON.stringify({ sha: FE.sha, form: FE.form, at: nowIso() }));
+    else localStorage.removeItem(feDraftKey());
+  } catch { /* storage unavailable: the changes stay only in the page */ }
+}
+
+function feRestoreDraft() {
+  let draft = null;
+  try { draft = JSON.parse(localStorage.getItem(feDraftKey()) || "null"); } catch { draft = null; }
+  if (!draft || !draft.form || !Array.isArray(draft.form.study)) return;
+  const use = () => {
+    FE.form = draft.form;
+    FE.uid = Math.max(FE.uid, ...feFields().map((f) => parseInt(String(f.uid).slice(1), 10) || 0),
+      ...FE.form.study.map((i) => parseInt(String(i.uid).slice(1), 10) || 0)) + 1;
+  };
+  if (draft.sha === FE.sha) {
+    use();
+    feToast(`Ho ripreso le modifiche non salvate del ${formatDate(draft.at)}.`);
+    return;
+  }
+  // The form changed on GitHub after the draft: the coordinator chooses.
+  FE.conflict = {
+    at: draft.at,
+    keep: () => { use(); FE.conflict = null; feRender(); fePersist(); },
+    drop: () => { FE.conflict = null; try { localStorage.removeItem(feDraftKey()); } catch { /* nothing to remove */ } feRender(); },
+  };
+}
+
+// --- rendering
+
+function feRender() {
+  const active = document.activeElement && document.activeElement.id;
+  const caret = active ? document.activeElement.selectionStart : null;
+  const view = $("formView");
+  view.replaceChildren(feHead(), feBanner(), ...(FE.conflict ? [feConflictBox()] : []),
+    el("div", { class: `fe-layout${S.coordinator ? "" : " single"}` },
+      S.coordinator ? el("section", { class: "card fe-editor", "aria-labelledby": "feEditorTitle" }, feEditor()) : null,
+      el("section", { class: "card fe-preview", "aria-labelledby": "fePreviewTitle", id: "fePreview" }, ...fePreview())),
+    S.coordinator ? null : feProposalBox());
+  feRenderBar();
+  if (active && $(active)) {
+    const node = $(active);
+    node.focus();
+    try { if (caret != null) node.setSelectionRange(caret, caret); } catch { /* not a text field */ }
+  }
+}
+
+// While typing: the preview, the counts and the bar change, the field being written stays as it is.
+function feRefresh(f) {
+  if (f) {
+    const title = $(`fe-title-${f.uid}`);
+    if (title) title.replaceChildren(...feFieldTitle(f));
+    $(`fe-field-${f.uid}`)?.classList.toggle("bad", feCheck().some((i) => i.f === f && i.error));
+  }
+  const tabs = $("feTabs");
+  if (tabs) tabs.replaceWith(feTabs());
+  if (FE.tab === "checks") $("feEditorBody").replaceChildren(feIssues());
+  $("fePreview").replaceChildren(...fePreview());
+  feRenderBar();
+  fePersist();
+}
+
+function feHead() {
+  const proposals = `https://github.com/${S.repo}/issues?q=${encodeURIComponent('is:issue is:open in:title "Scheda di estrazione"')}`;
+  return el("div", { class: "fe-head" },
+    el("div", {},
+      el("p", { class: "kicker", text: "Estrazione dei dati" }),
+      el("h1", { text: "Scheda di estrazione" }),
+      el("p", { class: "muted", text: S.coordinator
+        ? "I dati da raccogliere da ogni studio incluso: li vedono i revisori nella pagina dell'estrazione."
+        : "I dati che raccoglierai da ogni studio incluso. La prepara chi coordina la review." })),
+    S.coordinator ? el("div", { class: "fe-head-links" },
+      extLink(proposals, "Proposte dei revisori"), extLink(githubUrl(FORM_PATH), FORM_PATH)) : null);
+}
+
+function feBanner() {
+  const box = (text, more, kind = "") => el("div", { class: `banner ${kind}` }, icon(kind ? "warning" : "info"),
+    el("div", {}, el("p", { class: "fe-p", text }), more ? el("p", { class: "fe-p muted", text: more }) : null));
+  if (!S.coordinator) {
+    return FE.status === "closed" ? box("L'estrazione è chiusa: questa è la scheda usata per tutti gli studi.")
+      : box("Puoi già leggerla. Se un campo non è chiaro o manca qualcosa, proponi una modifica in fondo alla pagina.");
+  }
+  if (FE.status === "closed") {
+    return box("L'estrazione è chiusa: la scheda si può solo leggere.", "Per cambiarla riapri l'estrazione con sysrev extraction reopen.");
+  }
+  const withData = feFields(FE.saved).filter((f) => feCount(f)).length;
+  if (FE.status === "none") {
+    return box("La scheda si prepara prima di avviare l'estrazione: parti dall'elenco dei dati del protocollo.",
+      "Quando è pronta, conviene una prova pilota: due revisori estraggono 2 o 3 studi e si corregge la scheda. "
+      + "L'estrazione si avvia con sysrev extraction assign.");
+  }
+  return box(withData
+    ? `L'estrazione è in corso: ${plural(withData, "campo ha", "campi hanno")} già dei valori nelle schede dei revisori.`
+    : "L'estrazione è in corso, ma nessuna scheda ha ancora dei valori: puoi cambiare tutto.",
+  withData ? "Puoi aggiungere campi e scelte e correggere nomi e spiegazioni. Dei campi con valori non cambiano l'id e la chiave, "
+    + "il tipo cambia solo se i valori restano validi, e per toglierli serve una conferma. Se è una prova pilota, questo è il momento di correggere la scheda."
+    : "", withData ? "fe-warn" : "");
+}
+
+function feConflictBox() {
+  return el("div", { class: "banner error" }, icon("warning"), el("div", {},
+    el("p", { class: "fe-p", text: `Hai delle modifiche non salvate del ${formatDate(FE.conflict.at)}, ma nel frattempo la scheda è cambiata su GitHub.` }),
+    el("p", { class: "fe-p muted", text: "Se riprendi le tue modifiche e le salvi, sostituiscono la versione di GitHub." }),
+    el("div", { class: "fe-actions" },
+      el("button", { class: "btn small", type: "button", onclick: FE.conflict.keep }, "Riprendi le mie modifiche"),
+      el("button", { class: "btn small ghost", type: "button", onclick: FE.conflict.drop }, "Usa la versione di GitHub"))));
+}
+
+function feTabs() {
+  const issues = feCheck();
+  const errors = issues.filter((i) => i.error).length;
+  const tab = (id, name, count, bad = false) => el("button", { class: "tab", type: "button", role: "tab", id: `feTab-${id}`,
+    "aria-selected": String(FE.tab === id), onclick: () => { FE.tab = id; feRender(); } },
+  name, el("span", { class: `fe-count${bad ? " bad" : ""}`, text: fmtN(count) }));
+  return el("nav", { class: "tabs", id: "feTabs", role: "tablist", "aria-label": "Parti della scheda" },
+    tab("study", "Dati dello studio", FE.form.study.filter((i) => i.kind === "field").length),
+    tab("results", "Tabella dei risultati", FE.form.results.length),
+    tab("checks", "Controlli", issues.length, errors > 0));
+}
+
+function feEditor() {
+  const body = el("div", { class: "fe-body", id: "feEditorBody" });
+  if (FE.tab === "checks") body.append(feIssues());
+  else if (FE.tab === "study") {
+    let group = { section: null, items: [] };
+    const groups = [group];
+    for (const item of FE.form.study) {
+      if (item.kind === "section") groups.push(group = { section: item, items: [] });
+      else group.items.push(item);
+    }
+    for (const g of groups) if (g.section || g.items.length) body.append(feSection(g));
+    if (FE.editable) {
+      body.append(el("div", { class: "fe-actions" },
+        el("button", { class: "btn small", type: "button", onclick: feAddSection }, icon("plus"), "Nuova sezione"),
+        feBlocks("study")));
+    }
+  } else {
+    body.append(el("p", { class: "small muted fe-p", text: "Una riga della tabella per ogni combinazione dei campi chiave (di solito outcome, momento e gruppo): sono i dati per la meta-analisi." }));
+    body.append(FE.form.results.length
+      ? el("div", { class: "fe-fields" }, FE.form.results.map((f) => feFieldBox(f, FE.form.results)))
+      : el("div", { class: "fe-empty", text: "Nessun campo: la scheda non avrà la tabella dei risultati." }));
+    if (FE.editable) {
+      body.append(el("div", { class: "fe-actions" },
+        el("button", { class: "btn small", type: "button", onclick: () => feAddField(FE.form.results, FE.form.results.length) }, icon("plus"), "Nuovo campo"),
+        feBlocks("results")));
+    }
+  }
+  return [el("h2", { class: "fe-title", id: "feEditorTitle", text: FE.editable ? "Modifica" : "Campi" }), feTabs(), body];
+}
+
+function feSection(g) {
+  const s = g.section;
+  const head = el("div", { class: "fe-section-head" });
+  if (s) {
+    const name = el("input", { type: "text", id: `fe-sec-${s.uid}`, disabled: !FE.editable, "aria-label": "Nome della sezione" });
+    name.value = s.name;
+    name.addEventListener("input", () => { s.name = name.value; feRefresh(); });
+    head.append(el("span", { class: "fe-eyebrow", text: "Sezione" }), name);
+    if (FE.editable) {
+      head.append(el("span", { class: "fe-tools" },
+        feTool("caret-up", "Sposta la sezione su", () => feMoveSection(s, -1)),
+        feTool("caret-down", "Sposta la sezione giù", () => feMoveSection(s, 1)),
+        feTool("x", "Togli il titolo della sezione (i campi restano)", () => { FE.form.study.splice(FE.form.study.indexOf(s), 1); feRender(); fePersist(); })));
+    }
+  } else head.append(el("span", { class: "fe-eyebrow", text: "Senza sezione" }));
+  const after = g.items.length ? FE.form.study.indexOf(g.items.at(-1)) + 1 : FE.form.study.indexOf(s) + 1;
+  return el("div", { class: "fe-section" }, head,
+    g.items.length ? el("div", { class: "fe-fields" }, g.items.map((f) => feFieldBox(f, FE.form.study)))
+      : el("div", { class: "fe-empty small", text: "Sezione vuota." }),
+    FE.editable ? el("div", {}, el("button", { class: "btn small ghost", type: "button", onclick: () => feAddField(FE.form.study, after) }, icon("plus"), "Campo")) : null);
+}
+
+function feTool(name, label, onclick, disabled = false, title = label) {
+  return el("button", { class: "btn small ghost fe-tool", type: "button", "aria-label": label, title, disabled, onclick }, icon(name));
+}
+
+function feFieldTitle(f) {
+  const n = feCount(f);
+  const state = feState(f);
+  const bad = feCheck().some((i) => i.f === f && i.error);
+  return [
+    el("span", { class: "fe-label", text: f.label || "(senza nome)" }),
+    el("span", { class: "fe-meta" },
+      el("span", { class: "fe-pill", text: FIELD_TYPES[f.type] || f.type }),
+      el("code", { text: f.id }),
+      f.key && FE.form.results.includes(f) ? el("span", { class: "fe-pill key", text: "chiave" }) : null,
+      n ? el("span", { class: "fe-pill data", title: "Valori già inseriti nelle schede dei revisori", text: `valori in ${plural(n, "scheda", "schede")}` }) : null,
+      state === "new" ? el("span", { class: "fe-pill new", text: "nuovo" }) : state === "edited" ? el("span", { class: "fe-pill edited", text: "modificato" }) : null,
+      bad ? el("span", { class: "fe-pill bad", text: "da correggere" }) : null),
+  ];
+}
+
+function feFieldBox(f, list) {
+  const open = FE.open.has(f.uid);
+  const toggle = () => { if (open) FE.open.delete(f.uid); else FE.open.add(f.uid); feRender(); };
+  const head = el("div", { class: "fe-field-head", onclick: (event) => { if (!event.target.closest(".fe-tools")) toggle(); } },
+    el("button", { class: "btn small ghost fe-tool fe-caret", type: "button", id: `fe-open-${f.uid}`, "aria-expanded": String(open),
+      "aria-label": `${open ? "Chiudi" : "Apri"} ${f.label}`, onclick: (event) => { event.stopPropagation(); toggle(); } }, icon("caret-right")),
+    el("span", { class: "fe-field-title", id: `fe-title-${f.uid}` }, ...feFieldTitle(f)));
+  if (FE.editable) {
+    head.append(el("span", { class: "fe-tools" },
+      feTool("caret-up", "Sposta su", () => feMove(f, list, -1)),
+      feTool("caret-down", "Sposta giù", () => feMove(f, list, 1)),
+      feTool("copy", "Duplica", () => feDuplicate(f, list)),
+      feTool("trash", "Togli il campo", () => feRemove(f, list), false,
+        feCount(f) ? `Togli il campo (ha valori in ${plural(feCount(f), "scheda", "schede")}: servirà una conferma)` : "Togli il campo")));
+  }
+  const box = el("div", { class: `fe-field${open ? " open" : ""}`, id: `fe-field-${f.uid}` }, head);
+  if (feCheck().some((i) => i.f === f && i.error)) box.classList.add("bad");
+  if (open) box.append(feFieldForm(f, list));
+  return box;
+}
+
+function feFieldForm(f, list) {
+  const locked = feCount(f) > 0;
+  const saved = feSaved(f);
+  const disabled = !FE.editable;
+  const control = (label, input, hint) => el("label", { class: "fe-control" }, el("span", { text: label }), input,
+    hint ? el("small", { text: hint }) : null);
+
+  const label = el("input", { type: "text", id: `fe-label-${f.uid}`, disabled });
+  label.value = f.label;
+  label.addEventListener("input", () => {
+    f.label = label.value;
+    if (f.auto && !locked) {
+      f.id = feUniqueId(feMakeId(f.label), f);
+      const id = $(`fe-id-${f.uid}`);
+      if (id) id.value = f.id;
+    }
+    feRefresh(f);
+  });
+
+  const allowed = locked && saved ? [saved.type, ...(SAFE_TYPES[saved.type] || [])] : Object.keys(FIELD_TYPES);
+  const type = el("select", { id: `fe-type-${f.uid}`, disabled },
+    !FIELD_TYPES[f.type] ? el("option", { value: f.type, text: `${f.type} (non esiste)` }) : null,
+    Object.entries(FIELD_TYPES).map(([value, name]) => el("option", { value, disabled: !allowed.includes(value),
+      text: allowed.includes(value) ? name : `${name} (i valori già inseriti non andrebbero bene)` })));
+  type.value = f.type;
+  type.addEventListener("change", () => { f.type = type.value; feRender(); fePersist(); });
+
+  const parts = [el("div", { class: "fe-grid" },
+    control("Nome che vedono i revisori", label),
+    control("Tipo", type, locked ? "Ha già dei valori: solo i tipi che li tengono validi." : null))];
+
+  if (f.type === "choice" || f.type === "multiple_choice") {
+    const options = el("textarea", { id: `fe-options-${f.uid}`, rows: Math.max(3, f.options.length + 1), disabled, placeholder: "Una scelta per riga" });
+    options.value = f.options.join("\n");
+    options.addEventListener("input", () => { f.options = options.value.split("\n").map((o) => o.trim()).filter(Boolean); feRefresh(f); });
+    parts.push(control("Scelte possibili, una per riga", options, f.type === "multiple_choice"
+      ? "Il revisore può spuntarne più di una." : "Il revisore ne sceglie una. Per «Altro» aggiungi dopo un campo di testo."));
+  }
+
+  const help = el("textarea", { id: `fe-help-${f.uid}`, rows: 2, disabled, placeholder: "Per esempio: dalla tabella 1; se manca scrivi «non riportato»" });
+  help.value = f.help;
+  help.addEventListener("input", () => { f.help = help.value; feRefresh(f); });
+  parts.push(control("Spiegazione per i revisori (facoltativa)", help));
+
+  const id = el("input", { type: "text", class: "fe-mono", id: `fe-id-${f.uid}`, disabled: disabled || locked, spellcheck: "false", autocapitalize: "off" });
+  id.value = f.id;
+  id.addEventListener("input", () => { f.id = id.value.trim(); f.auto = false; feRefresh(f); });
+  const compare = el("input", { type: "checkbox", id: `fe-compare-${f.uid}`, disabled: disabled || f.key });
+  compare.checked = f.compare;
+  compare.addEventListener("change", () => { f.compare = compare.checked; feRefresh(f); });
+  const checks = el("div", { class: "fe-control" }, el("span", { text: "Confronto tra revisori" }),
+    el("label", { class: "fe-check" }, compare, el("span", {}, "Confronta i valori dei revisori",
+      el("small", { text: "Togli la spunta per le note libere, che nessuno scrive uguali." }))));
+  if (list === FE.form.results) {
+    const key = el("input", { type: "checkbox", id: `fe-key-${f.uid}`, disabled: disabled || locked });
+    key.checked = f.key;
+    key.addEventListener("change", () => { f.key = key.checked; if (f.key) f.compare = true; feRender(); fePersist(); });
+    checks.append(el("label", { class: "fe-check" }, key, el("span", {}, "Chiave: identifica la riga",
+      el("small", { text: locked ? "Non si cambia: cambierebbe l'abbinamento delle righe già estratte."
+        : "Le righe dei revisori si abbinano con le chiavi." }))));
+  }
+  parts.push(el("div", { class: "fe-grid" },
+    control("Id (nome della colonna nelle tabelle)", id, locked ? `Non si cambia: ${plural(feCount(f), "scheda usa", "schede usano")} già questo id.`
+      : f.auto ? "Si crea dal nome finché non lo scrivi tu." : "Lettere minuscole senza accenti, numeri e _."),
+    checks));
+  return el("div", { class: "fe-field-form" }, parts);
+}
+
+function feBlocks(table) {
+  const select = el("select", { id: `fe-blocks-${table}`, "aria-label": "Aggiungi un gruppo di campi pronto" },
+    el("option", { value: "", text: "Aggiungi campi pronti…" }),
+    FORM_BLOCKS[table].map((b, i) => el("option", { value: String(i), text: `${b.name}: ${b.fields.map((f) => f.label).join(", ")}` })));
+  select.addEventListener("change", () => {
+    if (select.value === "") return;
+    const block = FORM_BLOCKS[table][Number(select.value)];
+    const have = new Set(feFields().map((f) => f.id));
+    const add = block.fields.filter((f) => !have.has(f.id)).map((f) => ({ ...feField(f), origin: "" }));
+    const list = table === "study" ? FE.form.study : FE.form.results;
+    if (table === "study" && add.length) list.push({ kind: "section", uid: feUid(), name: block.name });
+    list.push(...add);
+    feToast(add.length ? `Aggiunti ${plural(add.length, "campo", "campi")}: ${block.name}.` : "Questi campi ci sono già.");
+    feRender();
+    fePersist();
+  });
+  return select;
+}
+
+function feIssues() {
+  const issues = feCheck();
+  if (!issues.length) return el("p", { class: "status done" }, icon("check-circle"), "Nessun problema: la scheda si può salvare.");
+  return el("div", { class: "fe-issues" }, issues.map((i) => el("div", { class: `fe-issue${i.error ? " error" : ""}` },
+    icon(i.error ? "warning-circle" : "warning"), el("span", { text: i.text }),
+    i.f && feFields().includes(i.f) ? el("button", { class: "btn small", type: "button", onclick: () => feGoTo(i.f) }, "Vai al campo") : null)));
+}
+
+function feGoTo(f) {
+  FE.tab = FE.form.results.includes(f) ? "results" : "study";
+  FE.open.add(f.uid);
+  feRender();
+  $(`fe-field-${f.uid}`)?.scrollIntoView({ block: "center" });
+  $(`fe-label-${f.uid}`)?.focus();
+}
+
+// --- the form as the reviewers see it (it can be filled in to try it; nothing is saved)
+
+function fePreview() {
+  const head = [el("h2", { class: "fe-title", id: "fePreviewTitle", text: S.coordinator ? "Come la vedono i revisori" : "La scheda" }),
+    el("p", { class: "small muted fe-p", text: "Puoi provare a compilarla: niente viene salvato." }),
+    el("nav", { class: "tabs", role: "tablist", "aria-label": "Parti della scheda" },
+      [["study", "Dati dello studio"], ["results", "Risultati"]].map(([id, name]) => el("button", {
+        class: "tab", type: "button", role: "tab", id: `fePv-${id}`, "aria-selected": String(FE.preview === id),
+        onclick: () => { FE.preview = id; $("fePreview").replaceChildren(...fePreview()); } }, name)))];
+  const body = el("div", { class: "ex-form fe-sample" });
+  if (FE.preview === "study") {
+    for (const item of FE.form.study) {
+      if (item.kind === "section") { body.append(el("h3", { text: item.name || "(sezione senza nome)" })); continue; }
+      const id = `fe-pv-${item.uid}`;
+      body.append(el("div", { class: "ex-field" },
+        item.type === "multiple_choice" ? el("span", { class: "fe-pv-label", text: item.label }) : el("label", { for: id, text: item.label }),
+        item.help ? el("div", { class: "help", text: item.help }) : null,
+        el("div", { class: "ex-input" }, fePvInput(item, id))));
+    }
+  } else if (!FE.form.results.length) {
+    body.append(el("p", { class: "muted", text: "Questa scheda non ha la tabella dei risultati." }));
+  } else {
+    const rows = [];
+    for (let r = 0; r < FE.pvRows; r++) rows.push(el("tr", {}, FE.form.results.map((f) => el("td", {}, fePvInput(f, `fe-pv-${f.uid}-${r}`, true)))));
+    body.append(el("p", { class: "small muted", text: "● campi chiave: una riga per ogni combinazione." }),
+      el("div", { class: "fe-table" }, el("table", {},
+        el("thead", {}, el("tr", {}, FE.form.results.map((f) => el("th", { title: f.help || null, text: f.label + (f.key ? " ●" : "") })))),
+        el("tbody", {}, rows))),
+      el("button", { class: "btn small", type: "button", onclick: () => { FE.pvRows++; $("fePreview").replaceChildren(...fePreview()); } }, icon("plus"), "Aggiungi riga"));
+  }
+  return [...head, body];
+}
+
+function fePvInput(f, id, compact = false) {
+  const value = FE.pv[id] ?? "";
+  const keep = (v) => { FE.pv[id] = v; };
+  if (f.type === "long_text" && !compact) {
+    const area = el("textarea", { id, rows: 2 });
+    area.value = value;
+    area.addEventListener("input", () => keep(area.value));
+    return area;
+  }
+  if (f.type === "choice" || f.type === "yes_no" || (f.type === "multiple_choice" && compact)) {
+    const options = f.type === "yes_no" ? [["yes", "Sì"], ["no", "No"]] : f.options.map((o) => [o, o]);
+    const select = el("select", { id, "aria-label": compact ? f.label : null }, el("option", { value: "", text: "Scegli…" }),
+      options.map(([v, t]) => el("option", { value: v, text: t })));
+    select.value = value;
+    select.addEventListener("change", () => keep(select.value));
+    return select;
+  }
+  if (f.type === "multiple_choice") {
+    const chosen = Array.isArray(value) ? value : [];
+    return el("div", { class: "checks", role: "group", "aria-label": f.label }, f.options.map((o, i) => {
+      const box = el("input", { type: "checkbox", id: `${id}-${i}` });
+      box.checked = chosen.includes(o);
+      box.addEventListener("change", () => keep(box.checked ? [...chosen.filter((c) => c !== o), o] : chosen.filter((c) => c !== o)));
+      return el("label", {}, box, o);
+    }));
+  }
+  const numeric = f.type === "number" || f.type === "integer";
+  const input = el("input", { type: "text", id, inputmode: numeric ? "decimal" : null, "aria-label": compact ? f.label : null });
+  input.value = value;
+  const check = () => {
+    const bad = numeric && !!input.value.trim() && !validNumber(f, input.value);
+    input.classList.toggle("invalid", bad);
+    input.title = bad ? (f.type === "integer" ? "Serve un numero intero" : "Serve un numero") : "";
+  };
+  input.addEventListener("input", () => { keep(input.value); check(); });
+  check();
+  return input;
+}
+
+// --- the reviewers: a proposal is an issue on GitHub (opened in a new tab, ready to be sent)
+
+function feProposalBox() {
+  const text = el("textarea", { id: "feProposal", rows: 4, placeholder: "Per esempio: aggiungere il numero di persi al follow-up per ogni gruppo." });
+  const link = el("a", { class: "btn primary", target: "_blank", rel: "noopener", "aria-disabled": "true", id: "feProposalLink" },
+    "Continua su GitHub", icon("arrow-up-right"));
+  const update = () => {
+    const body = `${text.value.trim()}\n\n---\nProposta di modifica della scheda di estrazione (${FORM_PATH}), scritta dalla pagina della review.`;
+    link.href = `https://github.com/${S.repo}/issues/new?${new URLSearchParams({ title: `Scheda di estrazione: proposta di ${S.login}`, body })}`;
+    link.setAttribute("aria-disabled", String(!text.value.trim()));
+  };
+  text.addEventListener("input", update);
+  link.addEventListener("click", (event) => { if (!text.value.trim()) { event.preventDefault(); text.focus(); } });
+  update();
+  return el("section", { class: "card fe-proposal", "aria-labelledby": "feProposalTitle" },
+    el("h2", { class: "fe-title", id: "feProposalTitle", text: "Proponi una modifica" }),
+    el("p", { class: "small muted fe-p", text: "Si apre GitHub con la proposta già scritta: clicca «Create» per mandarla. Chi coordina la trova tra le issue del repository." }),
+    text, el("div", { class: "fe-actions" }, link));
+}
+
+// --- editing
+
+function feChanged() { feRender(); fePersist(); }
+
+function feAddField(list, index) {
+  const f = { kind: "field", uid: feUid(), id: "", label: "Nuovo campo", type: "text", options: [], help: "", key: false, compare: true, auto: true, origin: "" };
+  f.id = feUniqueId(feMakeId(f.label), f);
+  list.splice(index, 0, f);
+  FE.open.add(f.uid);
+  feChanged();
+  const input = $(`fe-label-${f.uid}`);
+  if (input) { input.focus(); input.select(); }
+}
+function feAddSection() {
+  const s = { kind: "section", uid: feUid(), name: "Nuova sezione" };
+  FE.form.study.push(s);
+  feChanged();
+  const input = $(`fe-sec-${s.uid}`);
+  if (input) { input.focus(); input.select(); }
+}
+function feMove(f, list, step) {
+  const i = list.indexOf(f), j = i + step;
+  if (j < 0 || j >= list.length) return;
+  [list[i], list[j]] = [list[j], list[i]];  // in the study fields a field can go past the title of a section
+  feChanged();
+}
+function feMoveSection(s, step) {
+  const list = FE.form.study;
+  const start = list.indexOf(s);
+  let end = start + 1;
+  while (end < list.length && list[end].kind !== "section") end++;
+  const block = list.splice(start, end - start);
+  let at = start;
+  if (step < 0) { at = start - 1; while (at > 0 && list[at].kind !== "section") at--; at = Math.max(at, 0); }
+  else if (at < list.length) { at++; while (at < list.length && list[at].kind !== "section") at++; }
+  list.splice(at, 0, ...block);
+  feChanged();
+}
+function feDuplicate(f, list) {
+  const copy = { ...feClone(f), uid: feUid(), label: `${f.label} (copia)`, origin: "", auto: true, key: false };
+  copy.id = feUniqueId(feMakeId(copy.label), copy);
+  list.splice(list.indexOf(f) + 1, 0, copy);
+  FE.open.add(copy.uid);
+  feChanged();
+}
+function feRemove(f, list) {
+  const at = list.indexOf(f);
+  list.splice(at, 1);
+  FE.open.delete(f.uid);
+  feChanged();
+  feToast(`Tolto «${f.label}».`, () => { list.splice(Math.min(at, list.length), 0, f); feChanged(); });
+}
+
+function feToast(text, undo) {
+  const box = $("feToast");
+  box.replaceChildren(el("span", { text }));
+  if (undo) box.append(el("button", { class: "btn small", type: "button", onclick: () => { box.hidden = true; undo(); } }, "Annulla"));
+  box.hidden = false;
+  clearTimeout(FE.toastTimer);
+  FE.toastTimer = setTimeout(() => { box.hidden = true; }, undo ? 7000 : 4000);
+}
+
+// --- saving: one commit of form.yml
+
+function feRenderBar() {
+  const bar = $("feBar");
+  bar.hidden = !FE.editable || $("formView").hidden;
+  if (bar.hidden) return;
+  const c = feChanges();
+  const errors = feCheck().filter((i) => i.error).length;
+  const parts = [];
+  if (c.added.length) parts.push(plural(c.added.length, "campo aggiunto", "campi aggiunti"));
+  if (c.edited.length) parts.push(plural(c.edited.length, "modificato", "modificati"));
+  if (c.removed.length) parts.push(plural(c.removed.length, "tolto", "tolti"));
+  if (c.moved) parts.push("ordine o sezioni cambiati");
+  $("feSummary").replaceChildren(...(!c.any
+    ? [el("span", { class: "muted", text: FE.sha ? "Nessuna modifica: la scheda è quella salvata su GitHub." : "È la scheda d'esempio: modificala e salvala." })]
+    : [el("strong", { text: "Modifiche non salvate: " }), `${parts.join(", ")}. `,
+      errors ? el("span", { class: "fe-bad-text", text: `${plural(errors, "problema", "problemi")} da correggere (vedi Controlli).` })
+        : el("span", { class: "muted", text: "Restano in questo browser finché non le salvi." })]));
+  $("feSave").disabled = FE.saving || errors > 0 || (!c.any && !!FE.sha);
+  $("feDiscard").disabled = FE.saving || !c.any;
+}
+
+function feCommitMessage(c) {
+  const parts = [c.added.length && plural(c.added.length, "campo aggiunto", "campi aggiunti"),
+    c.edited.length && plural(c.edited.length, "modificato", "modificati"), c.removed.length && plural(c.removed.length, "tolto", "tolti")].filter(Boolean);
+  return `Scheda di estrazione: ${parts.join(", ") || "ordine dei campi"} (${S.login})`;
+}
+
+function feAskSave() {
+  const c = feChanges();
+  const removedWithData = c.removed.filter((s) => feCount(s));
+  const warnings = feCheck().filter((i) => !i.error);
+  const items = [...c.added.map((f) => `Aggiunto: ${f.label}`), ...c.edited.map((f) => `Modificato: ${f.label}`),
+    ...c.removed.map((f) => `Tolto: ${f.label}`), ...(c.moved ? ["Cambiati l'ordine o le sezioni"] : [])];
+  const next = FE.status === "none"
+    ? "Quando la scheda è pronta, avvia l'estrazione con sysrev extraction assign."
+    : FE.automation ? "Poi l'automazione su GitHub aggiorna la pagina dell'estrazione (un minuto circa): i revisori vedono la scheda nuova quando la ricaricano. Le schede già compilate non cambiano."
+      : "Per mostrarla ai revisori: nel Terminale fai Pull, lancia sysrev extraction assign, poi Commit e Push.";
+  const confirm = removedWithData.length ? el("input", { type: "checkbox", id: "feConfirm" }) : null;
+  const save = el("button", { class: "btn primary", type: "button", disabled: !!confirm, onclick: () => feSave($("feDialog")) }, icon("check"), "Salva");
+  if (confirm) confirm.addEventListener("change", () => { save.disabled = !confirm.checked; });
+  $("feDialog").replaceChildren(el("form", { method: "dialog", class: "fe-dialog-body" },
+    el("h2", { class: "fe-title", text: "Salva la scheda su GitHub" }),
+    items.length ? el("ul", { class: "fe-list" }, items.slice(0, 12).map((t) => el("li", { text: t })),
+      items.length > 12 ? el("li", { text: `… e altre ${items.length - 12}` }) : null) : el("p", { class: "fe-p", text: "La scheda d'esempio, così com'è." }),
+    warnings.length ? el("div", { class: "fe-issues" }, warnings.map((w) => el("div", { class: "fe-issue" }, icon("warning"), el("span", { text: w.text })))) : null,
+    confirm ? el("label", { class: "fe-check fe-confirm" }, confirm, el("span", {},
+      `Ho capito: i valori di ${removedWithData.map((s) => `«${s.label}»`).join(", ")} restano nei file dei revisori ma non entrano nelle tabelle finali.`)) : null,
+    el("p", { class: "small muted fe-p" }, "Un commit di ", el("code", { text: FORM_PATH }), `. ${next}`),
+    el("div", { class: "fe-actions end" }, el("button", { class: "btn", value: "cancel" }, "Annulla"), save)));
+  $("feDialog").showModal();
+}
+
+async function feSave(dialog) {
+  const c = feChanges();
+  const text = formYaml(FE.form, [
+    `Scheda di estrazione dei dati, salvata dalla pagina della review da ${S.login} (${new Date().toISOString().slice(0, 10)}).`,
+    "Si può modificare anche qui. Dopo ogni modifica: sysrev extraction assign (lo lancia anche l'automazione su GitHub).",
+    "Una volta cominciata l'estrazione non cambiare gli id: i dati già inseriti restano legati al nome vecchio.",
+  ]);
+  FE.saving = true;
+  feRenderBar();
+  setSaveState("pending", "Salvataggio…");
+  try {
+    FE.sha = await writeFile(FORM_PATH, text, FE.sha, feCommitMessage(c));
+    for (const f of feFields()) f.origin = f.id;  // read again at the next visit; no values yet for the new ids
+    FE.saved = feClone(FE.form);
+    try { localStorage.removeItem(feDraftKey()); } catch { /* nothing to remove */ }
+    dialog.close();
+    setSaveState("saved", "Scheda salvata");
+    feToast(FE.status === "open" && FE.automation ? "Scheda salvata su GitHub: tra un minuto i revisori la vedono." : "Scheda salvata su GitHub.");
+  } catch (error) {
+    dialog.close();
+    setSaveState("error", "Non salvata");
+    showBanner(error.status === 409 || error.status === 422
+      ? "Non salvata: la scheda è cambiata su GitHub mentre la modificavi. Ricarica la pagina: le tue modifiche restano in questo browser e potrai scegliere quale versione tenere."
+      : `Non salvata: ${explain(error)} Le modifiche restano in questo browser.`, true);
+    window.scrollTo({ top: 0 });
+  } finally {
+    FE.saving = false;
+    feRender();
+  }
+}
+
+$("feSave").addEventListener("click", feAskSave);
+$("feDiscard").addEventListener("click", () => {
+  FE.form = feClone(FE.saved);
+  FE.open.clear();
+  feChanged();
+  feToast("Modifiche annullate.");
+});
+
 // ---------------------------------------------------------------- home: the phases of the review
 
 // The review as a sequence of phases, grouped as the side bars of a PRISMA flow diagram. The status of each
@@ -2816,6 +4008,7 @@ const plural = (n, one, many) => `${fmtN(n)} ${n === 1 ? one : many}`;
 
 function homeUrl() { return `?${new URLSearchParams({ repo: S.repo })}`; }
 function stageUrl(stage) { return `?${new URLSearchParams({ repo: S.repo, stage })}`; }
+function formUrl() { return `?${new URLSearchParams({ repo: S.repo, form: "extraction" })}`; }
 function githubUrl(path, folder = false) {
   const branch = S.branch.split("/").map(encodeURIComponent).join("/");
   return `https://github.com/${S.repo}/${folder ? "tree" : "blob"}/${branch}/${path}`;
@@ -2991,8 +4184,16 @@ function buildPhases(d) {
       detail: [plural(mine.all, "studio", "studi"), modes[state.mode] || "", tools.join(", ")].filter(Boolean).join(" · "),
       figure: closed ? [mine.all, mine.all === 1 ? "studio" : "studi"] : null };
   };
-  phases.push(form("extraction", "Estrazione dei dati", "sysrev extraction assign",
-    { double: "doppia estrazione", verify: "estrazione e verifica" }));
+  const extraction = form("extraction", "Estrazione dei dati", "sysrev extraction assign",
+    { double: "doppia estrazione", verify: "estrazione e verifica" });
+  // The form: prepared by whoever coordinates (here in the page), read by everyone.
+  const hasForm = d.paths.has(FORM_PATH) || !d.treeOk;
+  if (S.coordinator) {
+    extraction.extra = { href: formUrl(), label: extraction.state === "todo" ? "Prepara la scheda di estrazione"
+      : extraction.state === "done" ? "Vedi la scheda di estrazione" : "Modifica la scheda di estrazione" };
+    if (extraction.state === "todo") extraction.coordDetail = "Prima prepara la scheda, poi avvia l'estrazione";
+  } else if (hasForm) extraction.extra = { href: formUrl(), label: "Leggi la scheda di estrazione" };
+  phases.push(extraction);
   phases.push(form("risk_of_bias", "Rischio di bias", "sysrev rob assign",
     { double: "doppia valutazione", verify: "valutazione e verifica" }));
 
@@ -3052,6 +4253,7 @@ function stepItem(p, i, phases, current) {
     : href ? el("a", { class: "step-body", href, target: "_blank", rel: "noopener", "data-phase": p.id }, main, side)
       : el("div", { class: "step-body", "data-phase": p.id }, main, side);
   li.append(el("span", { class: "node", "aria-hidden": "true" }, p.state === "done" ? icon("check-bold") : String(i + 1)), body);
+  if (p.extra) li.append(el("a", { class: "step-extra", href: p.extra.href }, icon("file-text"), p.extra.label));
   return li;
 }
 
@@ -3197,9 +4399,10 @@ async function watchStage() {
 // ---------------------------------------------------------------- loading
 
 function showView(name) {
-  for (const view of ["loginView", "loadingView", "homeView", "screenView", "conflictsView", "extractionView"]) $(view).hidden = view !== name;
+  for (const view of ["loginView", "loadingView", "homeView", "screenView", "conflictsView", "extractionView", "formView"]) $(view).hidden = view !== name;
   if (name !== "screenView") $("decideBar").hidden = true;
   if (name !== "extractionView") $("exBar").hidden = true;
+  if (name !== "formView") $("feBar").hidden = true;
 }
 
 const unsaved = () => S.dirty.size + EX.dirty.size + S.consensusDirty.size;
@@ -3237,6 +4440,7 @@ async function start() {
     const formStates = { extraction: extractionState, risk_of_bias: robState };
     S.stages = [titleAbstractState && "title_abstract", fullTextState && "full_text", extractionState && "extraction",
       robState && "risk_of_bias"].filter(Boolean);
+    if (new URLSearchParams(location.search).get("form") === "extraction") return startForm(extractionState);
     // Without a stage (or with one not started yet) the page opens on the phases of the review.
     const wanted = new URLSearchParams(location.search).get("stage");
     if (!S.stages.includes(wanted)) {

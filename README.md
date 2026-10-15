@@ -5,7 +5,8 @@ delle systematic review di `sysrev-org`.
 
 **Indirizzo**: `https://sysrev-org.github.io/screening/?repo=sysrev-org/NOME-DELLA-REVIEW`
 (chi coordina manda il link completo ai revisori). La pagina si apre sulla panoramica delle fasi della review;
-con `&stage=title_abstract`, `full_text`, `extraction` o `risk_of_bias` si apre direttamente una fase.
+con `&stage=title_abstract`, `full_text`, `extraction` o `risk_of_bias` si apre direttamente una fase, con
+`&form=extraction` la scheda di estrazione (chi amministra il repository la modifica, gli altri la leggono).
 
 ## Cosa contiene
 
